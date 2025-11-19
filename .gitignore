@@ -1,0 +1,5 @@
+*.stl
+_media
+*.FCBak
+clacks.FCStd.*
+*.FCStd
