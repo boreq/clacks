@@ -4,3 +4,4 @@ _docs
 *.FCBak
 clacks.FCStd.*
 *.FCStd
+.idea/
