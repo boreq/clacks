@@ -1,4 +1,5 @@
-mod add_message_to_queue;
+pub mod add_message_to_queue;
+pub mod update_clacks;
 
 use crate::domain::Message;
 use crate::domain::time::Duration;
@@ -19,7 +20,7 @@ impl UpdateClacks {
 }
 
 pub trait UpdateClacksHandler {
-    fn handle(&mut self, update_clacks: UpdateClacks) -> Result<()>;
+    fn handle(&self, update_clacks: UpdateClacks) -> Result<()>;
 }
 
 pub struct AddMessageToQueue {
@@ -33,7 +34,11 @@ impl AddMessageToQueue {
 }
 
 pub trait AddMessageToQueueHandler {
-    fn handle(&mut self, add_message_to_queue: AddMessageToQueue) -> Result<()>;
+    fn handle(&self, add_message_to_queue: AddMessageToQueue) -> Result<()>;
+}
+
+pub trait Clacks {
+    fn update(&self) -> Result<()>;
 }
 
 pub trait Queue {

@@ -1,7 +1,6 @@
 use crate::app;
 use crate::app::{AddMessageToQueue, Metrics, Queue};
-use crate::errors::{Error, Result};
-use anyhow::anyhow;
+use crate::errors::Result;
 use clacks_macros::application_handler;
 
 pub struct AddMessageToQueueHandler<Q, M> {
@@ -21,7 +20,7 @@ where
     M: Metrics,
 {
     #[application_handler]
-    fn handle(&mut self, _add_message_to_queue: AddMessageToQueue) -> Result<()> {
-        Err::<(), Error>(anyhow!("not implemented").into())
+    fn handle(&self, add_message_to_queue: AddMessageToQueue) -> Result<()> {
+        self.queue.add_message(add_message_to_queue.message)
     }
 }
