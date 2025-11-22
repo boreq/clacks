@@ -1,0 +1,125 @@
+use crate::config::Config;
+use crate::errors::Result;
+use serde::Deserialize;
+use std::fs;
+use std::path::PathBuf;
+use prometheus::{labels, CounterVec, HistogramOpts, HistogramVec, Opts, Registry};
+use crate::app;
+use crate::app::ApplicationHandlerCallResult;
+use crate::domain::time::Duration;
+
+pub struct ConfigLoader {
+    path: PathBuf,
+}
+
+impl ConfigLoader {
+    pub fn new<P: Into<PathBuf>>(path: P) -> Self {
+        Self { path: path.into() }
+    }
+
+    pub fn load(&self) -> Result<Config> {
+        let content = fs::read_to_string(&self.path)?;
+        let transport: TomlConfig = toml::from_str(&content)?;
+        Config::try_from(transport)
+    }
+}
+
+#[derive(Deserialize)]
+struct TomlConfig {
+    queue_size: usize,
+}
+
+impl TryFrom<TomlConfig> for Config {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: TomlConfig) -> std::result::Result<Self, Self::Error> {
+        Config::new(value.queue_size)
+    }
+}
+
+#[derive(Clone)]
+pub struct Metrics {
+    registry: Registry,
+
+    metric_application_handler_calls_counter: CounterVec,
+    metric_application_handler_calls_histogram: HistogramVec,
+}
+
+impl Metrics {
+    pub fn new() -> Result<Self> {
+        let registry = Registry::new_custom(Some("bricked".into()), None)?;
+
+        let metric_application_handler_calls_counter = CounterVec::new(
+            Opts::new(
+                "application_handler_calls_counter",
+                "application handler calls counter",
+            ),
+            &["handler_name", "result"],
+        )?;
+        registry.register(Box::new(metric_application_handler_calls_counter.clone()))?;
+
+        let metric_application_handler_calls_histogram = HistogramVec::new(
+            HistogramOpts::new(
+                "application_handler_calls_histogram",
+                "application handler calls durations",
+            ),
+            &["handler_name", "result"],
+        )?;
+        registry.register(Box::new(metric_application_handler_calls_histogram.clone()))?;
+
+        Ok(Self {
+            registry,
+
+            metric_application_handler_calls_counter,
+            metric_application_handler_calls_histogram,
+        })
+    }
+
+    pub fn registry(&self) -> &Registry {
+        &self.registry
+    }
+}
+
+impl app::Metrics for Metrics {
+    fn record_application_handler_call(
+        &self,
+        handler_name: &str,
+        result: ApplicationHandlerCallResult,
+        duration: Duration,
+    ) {
+        let labels = labels! {
+            "handler_name" => handler_name,
+            "result" => match result {
+                ApplicationHandlerCallResult::Ok => "ok",
+                ApplicationHandlerCallResult::Error => "error"
+            },
+        };
+
+        self.metric_application_handler_calls_counter
+            .with(&labels)
+            .inc();
+
+        self.metric_application_handler_calls_histogram
+            .with(&labels)
+            .observe(duration.as_seconds());
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use crate::fixtures;
+    use super::ConfigLoader;
+
+    #[test]
+    fn loads_config_from_file_successfully() -> Result<()> {
+        let expected_config = Config::new(10)?;
+        let loader = ConfigLoader::new(fixtures::test_file_path("src/adapters/testdata/config.toml"));
+        let config = loader.load()?;
+        assert_eq!(expected_config, config);
+        Ok(())
+    }
+}

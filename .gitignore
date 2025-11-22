@@ -5,3 +5,4 @@ _docs
 clacks.FCStd.*
 *.FCStd
 .idea/
+target

@@ -1,5 +1,5 @@
 use crate::app;
-use crate::app::{Clacks, Metrics, UpdateClacks};
+use crate::app::{Clacks, Metrics};
 use crate::errors::Result;
 use clacks_macros::application_handler;
 
@@ -20,7 +20,7 @@ where
     M: Metrics,
 {
     #[application_handler]
-    fn handle(&self, _update_clacks: UpdateClacks) -> Result<()> {
+    fn handle(&self) -> Result<()> {
         self.clacks.update()
     }
 }
