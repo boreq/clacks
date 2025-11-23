@@ -1,3 +1,4 @@
+use crate::domain::TimingConfig;
 use crate::errors::Result;
 use anyhow::anyhow;
 
@@ -6,6 +7,7 @@ pub struct Config {
     address: String,
     queue_size: usize,
     environment: Environment,
+    timing: TimingConfig,
 }
 
 impl Config {
@@ -13,9 +15,9 @@ impl Config {
         address: impl Into<String>,
         queue_size: usize,
         environment: Environment,
+        timing: TimingConfig,
     ) -> Result<Self> {
         let address = address.into();
-
         if address.is_empty() {
             return Err(anyhow!("address can't be empty").into());
         }
@@ -26,6 +28,7 @@ impl Config {
             address,
             queue_size,
             environment,
+            timing,
         })
     }
 
@@ -39,6 +42,10 @@ impl Config {
 
     pub fn environment(&self) -> &Environment {
         &self.environment
+    }
+
+    pub fn timing(&self) -> &TimingConfig {
+        &self.timing
     }
 }
 

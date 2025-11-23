@@ -46,7 +46,7 @@ async fn run(config_file_path: &str) -> Result<()> {
     let metrics = Metrics::new()?;
 
     let queue = domain::Queue::new(config.queue_size())?;
-    let clacks = domain::Clacks::new(queue.clone());
+    let clacks = domain::Clacks::new(config.timing().clone(), queue.clone());
     let encoding = domain::Encoding::default();
 
     let update_clacks_handler = UpdateClacksHandler::new(clacks, metrics.clone());

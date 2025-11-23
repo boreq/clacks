@@ -1,6 +1,7 @@
 use crate::app;
 use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};
+use crate::domain::TimingConfig;
 use crate::domain::time::Duration;
 use crate::errors::Result;
 use anyhow::anyhow;
@@ -30,6 +31,7 @@ struct TomlConfig {
     address: String,
     queue_size: usize,
     environment: String,
+    timing: TomlTimingConfig,
 }
 
 impl TryFrom<TomlConfig> for Config {
@@ -40,6 +42,7 @@ impl TryFrom<TomlConfig> for Config {
             value.address,
             value.queue_size,
             value.environment.try_into()?,
+            value.timing.try_into()?,
         )
     }
 }
@@ -53,6 +56,25 @@ impl TryFrom<String> for Environment {
             "development" => Ok(Environment::Development),
             other => Err(anyhow!("invalid environment: {}", other).into()),
         }
+    }
+}
+
+#[derive(Deserialize)]
+struct TomlTimingConfig {
+    show_character_for: u64,
+    pause_between_characters_for: u64,
+    pause_between_messages_for: u64,
+}
+
+impl TryFrom<TomlTimingConfig> for TimingConfig {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: TomlTimingConfig) -> std::result::Result<Self, Self::Error> {
+        Ok(TimingConfig::new(
+            Duration::new_from_seconds(value.show_character_for),
+            Duration::new_from_seconds(value.pause_between_characters_for),
+            Duration::new_from_seconds(value.pause_between_messages_for),
+        ))
     }
 }
 
@@ -133,7 +155,16 @@ mod tests {
 
     #[test]
     fn loads_config_from_file_successfully() -> Result<()> {
-        let expected_config = Config::new("0.0.0.0:8080", 10, Environment::Development)?;
+        let expected_config = Config::new(
+            "0.0.0.0:8080",
+            10,
+            Environment::Development,
+            TimingConfig::new(
+                Duration::new_from_seconds(1),
+                Duration::new_from_seconds(2),
+                Duration::new_from_seconds(3),
+            ),
+        )?;
         let loader = ConfigLoader::new(fixtures::test_file_path(
             "src/adapters/testdata/config.toml",
         ));

@@ -46,12 +46,6 @@ impl From<prometheus::Error> for Error {
     }
 }
 
-// impl From<std::fmt::Error> for Error {
-//     fn from(value: std::fmt::Error) -> Self {
-//         Unknown(anyhow!(value))
-//     }
-// }
-
 impl From<MatchesError> for Error {
     fn from(value: MatchesError) -> Self {
         Unknown(anyhow!(value))

@@ -34,7 +34,7 @@ pub fn application_handler(_attr: TokenStream, item: TokenStream) -> TokenStream
                 },
                 Ok(_) => {
                     self.metrics.record_application_handler_call(type_name, crate::app::ApplicationHandlerCallResult::Ok, crate::domain::time::Duration::new_from_std(duration));
-                    log::info!("Application layer call succeeded: function=`{}` duration=`{:.2?}`", stringify!(#func_name), duration);
+                    log::debug!("Application layer call succeeded: function=`{}` duration=`{:.2?}`", stringify!(#func_name), duration);
                 }
             }
             result

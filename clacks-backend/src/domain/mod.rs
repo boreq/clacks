@@ -1,5 +1,6 @@
 pub mod time;
 
+use crate::domain::time::Duration;
 use crate::errors::Error;
 use crate::errors::Result;
 use anyhow::anyhow;
@@ -103,6 +104,7 @@ impl EncodedMessage {
     }
 }
 
+#[derive(Clone)]
 pub struct EncodedMessagePart {
     element: MessageComponent,
     encoding: ShutterPositions,
@@ -116,6 +118,7 @@ impl EncodedMessagePart {
 
 impl EncodedMessagePart {}
 
+#[derive(Clone)]
 pub enum MessageComponent {
     Character(char),
     End,
@@ -125,6 +128,20 @@ pub struct CurrentMessage {
     before: Vec<EncodedMessagePart>,
     current: Option<EncodedMessagePart>,
     after: Vec<EncodedMessagePart>,
+}
+
+impl CurrentMessage {
+    pub fn new(
+        before: Vec<EncodedMessagePart>,
+        current: Option<EncodedMessagePart>,
+        after: Vec<EncodedMessagePart>,
+    ) -> Self {
+        Self {
+            before,
+            current,
+            after,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -272,20 +289,211 @@ impl Queue {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TimingConfig {
+    show_character_for: Duration,
+    pause_between_characters_for: Duration,
+    pause_between_messages_for: Duration,
+}
+
+impl TimingConfig {
+    pub fn new(
+        show_character_for: Duration,
+        pause_between_characters_for: Duration,
+        pause_between_messages_for: Duration,
+    ) -> Self {
+        Self {
+            show_character_for,
+            pause_between_characters_for,
+            pause_between_messages_for,
+        }
+    }
+
+    pub fn show_character_for(&self) -> &Duration {
+        &self.show_character_for
+    }
+
+    pub fn pause_between_characters_for(&self) -> &Duration {
+        &self.pause_between_characters_for
+    }
+
+    pub fn pause_between_messages_for(&self) -> &Duration {
+        &self.pause_between_messages_for
+    }
+}
+
 pub struct Clacks {
-    _current_message: Arc<Mutex<Option<CurrentMessage>>>,
+    current_state: Arc<Mutex<Box<dyn ClacksState>>>,
+    config: TimingConfig,
     queue: Queue,
 }
 
 impl Clacks {
-    pub fn new(queue: Queue) -> Self {
+    pub fn new(config: TimingConfig, queue: Queue) -> Self {
         Self {
-            _current_message: Arc::new(Mutex::new(None)),
+            current_state: Arc::new(Mutex::new(Box::new(ClacksWaitingForNextMessage::new()))),
+            config,
             queue,
         }
     }
 
     pub fn update(&self) -> Result<()> {
-        Err(anyhow!("Not implemented").into())
+        let mut current_state = self.current_state.lock().unwrap();
+        if let Some(new_state) = current_state.update(&self.queue, &self.config)? {
+            *current_state = new_state;
+            // todo send update
+        };
+
+        Ok(())
+    }
+}
+
+trait ClacksState: Send {
+    fn update(&self, queue: &Queue, config: &TimingConfig) -> Result<Option<Box<dyn ClacksState>>>;
+}
+
+struct ClacksWaitingForNextMessage {}
+
+impl ClacksWaitingForNextMessage {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl ClacksState for ClacksWaitingForNextMessage {
+    fn update(
+        &self,
+        queue: &Queue,
+        _config: &TimingConfig,
+    ) -> Result<Option<Box<dyn ClacksState>>> {
+        match queue.pop_message() {
+            Some(encoded_message) => Ok(Some(Box::new(ClacksShowingCharacter::new_message(
+                encoded_message,
+            )))),
+            None => Ok(None),
+        }
+    }
+}
+
+struct ClacksShowingCharacter {
+    before: Vec<EncodedMessagePart>,
+    current: EncodedMessagePart,
+    after: Vec<EncodedMessagePart>,
+    started_at: time::DateTime,
+}
+
+impl ClacksShowingCharacter {
+    pub fn new_message(message: EncodedMessage) -> Self {
+        let first = message.parts[0].clone();
+        Self {
+            before: vec![],
+            current: first,
+            after: message.parts.into_iter().skip(1).collect(),
+            started_at: time::DateTime::now(),
+        }
+    }
+
+    fn next_character(state: &ClacksPausingBetweenCharacters) -> Result<Self> {
+        if state.after.is_empty() {
+            return Err(
+                anyhow!("after can't be empty when advancing to the next character").into(),
+            );
+        }
+
+        let next = state.after[0].clone();
+        Ok(Self {
+            before: state.before.clone(),
+            current: next,
+            after: state.after.clone().into_iter().skip(1).collect(),
+            started_at: time::DateTime::now(),
+        })
+    }
+}
+
+impl ClacksState for ClacksShowingCharacter {
+    fn update(
+        &self,
+        _queue: &Queue,
+        config: &TimingConfig,
+    ) -> Result<Option<Box<dyn ClacksState>>> {
+        let since = &time::DateTime::now() - &self.started_at;
+        if since < config.show_character_for {
+            return Ok(None);
+        }
+
+        if !self.after.is_empty() {
+            return Ok(Some(Box::new(ClacksPausingBetweenCharacters::new(self)?)));
+        }
+
+        Ok(Some(Box::new(ClacksPausingBetweenMessages::new())))
+    }
+}
+
+struct ClacksPausingBetweenCharacters {
+    before: Vec<EncodedMessagePart>,
+    after: Vec<EncodedMessagePart>,
+    started_at: time::DateTime,
+}
+
+impl ClacksPausingBetweenCharacters {
+    pub fn new(state: &ClacksShowingCharacter) -> Result<Self> {
+        if state.after.is_empty() {
+            return Err(
+                anyhow!("after can't be empty when entering pausing before characters").into(),
+            );
+        }
+
+        let mut before: Vec<EncodedMessagePart> = state.before.clone();
+        before.push(state.current.clone());
+
+        Ok(Self {
+            before,
+            after: state.after.clone(),
+            started_at: time::DateTime::now(),
+        })
+    }
+}
+
+impl ClacksState for ClacksPausingBetweenCharacters {
+    fn update(
+        &self,
+        _queue: &Queue,
+        config: &TimingConfig,
+    ) -> Result<Option<Box<dyn ClacksState>>> {
+        let since = &time::DateTime::now() - &self.started_at;
+        if since < config.pause_between_characters_for {
+            return Ok(None);
+        }
+
+        Ok(Some(Box::new(ClacksShowingCharacter::next_character(
+            self,
+        )?)))
+    }
+}
+
+struct ClacksPausingBetweenMessages {
+    started_at: time::DateTime,
+}
+
+impl ClacksPausingBetweenMessages {
+    pub fn new() -> Self {
+        Self {
+            started_at: time::DateTime::now(),
+        }
+    }
+}
+
+impl ClacksState for ClacksPausingBetweenMessages {
+    fn update(
+        &self,
+        _queue: &Queue,
+        config: &TimingConfig,
+    ) -> Result<Option<Box<dyn ClacksState>>> {
+        let since = &time::DateTime::now() - &self.started_at;
+        if since < config.pause_between_messages_for {
+            return Ok(None);
+        }
+
+        Ok(Some(Box::new(ClacksWaitingForNextMessage::new())))
     }
 }

@@ -3,7 +3,7 @@ use log::{debug, error};
 use std::time::Duration;
 use tokio::time::sleep;
 
-static UPDATE_CLACKS_EVERY: Duration = Duration::from_secs(5);
+static UPDATE_CLACKS_EVERY: Duration = Duration::from_millis(100);
 
 pub struct UpdateClacksTimer<H: UpdateClacksHandler> {
     handler: H,
