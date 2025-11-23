@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, Environment};
 use crate::errors::Result;
 use serde::Deserialize;
 use std::fs;
@@ -7,6 +7,7 @@ use prometheus::{labels, CounterVec, HistogramOpts, HistogramVec, Opts, Registry
 use crate::app;
 use crate::app::ApplicationHandlerCallResult;
 use crate::domain::time::Duration;
+use anyhow::anyhow;
 
 pub struct ConfigLoader {
     path: PathBuf,
@@ -26,14 +27,28 @@ impl ConfigLoader {
 
 #[derive(Deserialize)]
 struct TomlConfig {
+    address: String,
     queue_size: usize,
+    environment: String,
 }
 
 impl TryFrom<TomlConfig> for Config {
     type Error = crate::errors::Error;
 
     fn try_from(value: TomlConfig) -> std::result::Result<Self, Self::Error> {
-        Config::new(value.queue_size)
+        Config::new(value.address, value.queue_size, value.environment.try_into()?)
+    }
+}
+
+impl TryFrom<String> for Environment {
+    type Error = crate::errors::Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        match value.as_str() {
+            "production" => Ok(Environment::Production),
+            "development" => Ok(Environment::Development),
+            other => Err(anyhow!("invalid environment: {}", other).into()),
+        }
     }
 }
 
@@ -116,7 +131,7 @@ mod tests {
 
     #[test]
     fn loads_config_from_file_successfully() -> Result<()> {
-        let expected_config = Config::new(10)?;
+        let expected_config = Config::new("0.0.0.0:8080", 10, Environment::Development)?;
         let loader = ConfigLoader::new(fixtures::test_file_path("src/adapters/testdata/config.toml"));
         let config = loader.load()?;
         assert_eq!(expected_config, config);

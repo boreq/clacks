@@ -9,7 +9,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(address: String, queue_size: usize, environment: Environment) -> Result<Self> {
+    pub fn new(address: impl Into<String>, queue_size: usize, environment: Environment) -> Result<Self> {
+        let address = address.into();
+
         if address.is_empty() {
             return Err(anyhow!("address can't be empty").into());
         }
@@ -27,8 +29,8 @@ impl Config {
         self.queue_size
     }
 
-    pub fn environment(&self) -> Environment {
-        self.environment
+    pub fn environment(&self) -> &Environment {
+        &self.environment
     }
 }
 
