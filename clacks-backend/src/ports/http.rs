@@ -1,7 +1,8 @@
+use crate::app::AddMessageToQueue;
 use crate::config::Environment;
 use crate::domain::Message;
 use crate::errors::{Error, Result};
-use crate::{adapters, app, config};
+use crate::{app, config};
 use app::AddMessageToQueueHandler;
 use axum::{
     Router,
@@ -21,7 +22,6 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
-use crate::app::AddMessageToQueue;
 
 pub struct Server {}
 
@@ -65,9 +65,7 @@ impl Server {
     }
 }
 
-async fn handle_get_metrics<D>(
-    State(deps): State<D>,
-) -> std::result::Result<String, AppError>
+async fn handle_get_metrics<D>(State(deps): State<D>) -> std::result::Result<String, AppError>
 where
     D: Deps,
 {
@@ -78,12 +76,12 @@ where
 
 async fn handle_post_queue<D>(
     State(deps): State<D>,
-    Json(jsonBody): Json<PostQueueRequest>,
+    Json(json_body): Json<PostQueueRequest>,
 ) -> std::result::Result<(), AppError>
 where
     D: Deps,
 {
-    let message = Message::new(jsonBody.message).map_err(|_| AppError::BadRequest)?;
+    let message = Message::new(json_body.message).map_err(|_| AppError::BadRequest)?;
     let command = AddMessageToQueue::new(message);
     deps.add_message_to_queue_handler().handle(command)?;
     Ok(())

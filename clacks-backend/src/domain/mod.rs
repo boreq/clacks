@@ -33,7 +33,7 @@ pub struct ShutterPositions {
 impl ShutterPositions {
     pub fn new(open_shutters: &[ShutterLocation]) -> Result<Self> {
         let open_shutters_set: HashSet<ShutterLocation> =
-            HashSet::from_iter(open_shutters.iter().map(|v| v.clone()));
+            HashSet::from_iter(open_shutters.iter().cloned());
         if open_shutters_set.len() != open_shutters.len() {
             return Err(anyhow!("shutter locations have duplicate values in them").into());
         }
@@ -127,6 +127,7 @@ pub struct CurrentMessage {
     after: Vec<EncodedMessagePart>,
 }
 
+#[derive(Clone)]
 pub struct Encoding {
     characters: HashMap<String, ShutterPositions>,
     message_end: ShutterPositions,
@@ -191,7 +192,7 @@ impl Encoding {
                 return Err(anyhow!("character encoding can't be all shutters closed").into());
             }
 
-            if positions.contains(&position) {
+            if positions.contains(position) {
                 return Err(
                     anyhow!("duplicate shutter position for character '{}'", character).into(),
                 );
@@ -241,7 +242,7 @@ impl Encoding {
 
 #[derive(Clone)]
 pub struct Queue {
-    messages: Arc<Mutex<Vec<Message>>>,
+    messages: Arc<Mutex<Vec<EncodedMessage>>>,
     max_messages: usize,
 }
 
@@ -256,7 +257,7 @@ impl Queue {
         })
     }
 
-    pub fn add_message(&self, message: Message) -> Result<()> {
+    pub fn add_message(&self, message: EncodedMessage) -> Result<()> {
         let mut messages = self.messages.lock().unwrap();
         if messages.len() >= self.max_messages {
             return Err(Error::QueueIsFull);
@@ -265,21 +266,21 @@ impl Queue {
         Ok(())
     }
 
-    pub fn pop_message(&self, _message: Message) -> Option<Message> {
+    pub fn pop_message(&self) -> Option<EncodedMessage> {
         let mut messages = self.messages.lock().unwrap();
         messages.pop()
     }
 }
 
 pub struct Clacks {
-    current_message: Option<CurrentMessage>,
+    _current_message: Arc<Mutex<Option<CurrentMessage>>>,
     queue: Queue,
 }
 
 impl Clacks {
     pub fn new(queue: Queue) -> Self {
         Self {
-            current_message: None,
+            _current_message: Arc::new(Mutex::new(None)),
             queue,
         }
     }

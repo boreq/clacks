@@ -3,6 +3,7 @@ use crate::app::{Clacks, Metrics};
 use crate::errors::Result;
 use clacks_macros::application_handler;
 
+#[derive(Clone)]
 pub struct UpdateClacksHandler<C, M> {
     clacks: C,
     metrics: M,

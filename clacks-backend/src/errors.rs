@@ -1,6 +1,7 @@
 use crate::errors::Error::Unknown;
 use anyhow::anyhow;
 use chrono::RoundingError;
+use clap::parser::MatchesError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -41,6 +42,18 @@ impl From<toml::de::Error> for Error {
 
 impl From<prometheus::Error> for Error {
     fn from(value: prometheus::Error) -> Self {
+        Unknown(anyhow!(value))
+    }
+}
+
+// impl From<std::fmt::Error> for Error {
+//     fn from(value: std::fmt::Error) -> Self {
+//         Unknown(anyhow!(value))
+//     }
+// }
+
+impl From<MatchesError> for Error {
+    fn from(value: MatchesError) -> Self {
         Unknown(anyhow!(value))
     }
 }

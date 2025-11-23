@@ -1,6 +1,7 @@
 pub mod add_message_to_queue;
 pub mod update_clacks;
 
+use crate::domain;
 use crate::domain::time::Duration;
 use crate::domain::{EncodedMessage, Message};
 use crate::errors::Result;
@@ -29,7 +30,7 @@ pub trait Clacks {
 
 pub trait Queue {
     fn add_message(&self, message: EncodedMessage) -> Result<()>;
-    fn pop_message(&self, message: EncodedMessage) -> Option<EncodedMessage>;
+    fn pop_message(&self) -> Option<EncodedMessage>;
 }
 
 pub trait Encoding {
@@ -48,4 +49,26 @@ pub trait Metrics {
 pub enum ApplicationHandlerCallResult {
     Ok,
     Error,
+}
+
+impl Clacks for domain::Clacks {
+    fn update(&self) -> Result<()> {
+        self.update()
+    }
+}
+
+impl Queue for domain::Queue {
+    fn add_message(&self, message: EncodedMessage) -> Result<()> {
+        self.add_message(message)
+    }
+
+    fn pop_message(&self) -> Option<EncodedMessage> {
+        self.pop_message()
+    }
+}
+
+impl Encoding for domain::Encoding {
+    fn encode(&self, message: &Message) -> Result<EncodedMessage> {
+        self.encode(message)
+    }
 }

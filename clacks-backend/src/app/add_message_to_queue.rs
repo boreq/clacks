@@ -3,6 +3,7 @@ use crate::app::{AddMessageToQueue, Encoding, Metrics, Queue};
 use crate::errors::Result;
 use clacks_macros::application_handler;
 
+#[derive(Clone)]
 pub struct AddMessageToQueueHandler<Q, M, E> {
     queue: Q,
     metrics: M,
