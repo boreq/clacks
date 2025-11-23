@@ -9,9 +9,13 @@ pub struct AddMessageToQueueHandler<Q, M, E> {
     encoding: E,
 }
 
-impl<Q, M,E> AddMessageToQueueHandler<Q, M, E> {
+impl<Q, M, E> AddMessageToQueueHandler<Q, M, E> {
     pub fn new(queue: Q, metrics: M, encoding: E) -> Self {
-        Self { queue, metrics, encoding }
+        Self {
+            queue,
+            metrics,
+            encoding,
+        }
     }
 }
 

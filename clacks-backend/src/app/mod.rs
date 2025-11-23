@@ -1,8 +1,8 @@
 pub mod add_message_to_queue;
 pub mod update_clacks;
 
-use crate::domain::{EncodedMessage, Message};
 use crate::domain::time::Duration;
+use crate::domain::{EncodedMessage, Message};
 use crate::errors::Result;
 
 pub trait UpdateClacksHandler {
@@ -31,7 +31,6 @@ pub trait Queue {
     fn add_message(&self, message: EncodedMessage) -> Result<()>;
     fn pop_message(&self, message: EncodedMessage) -> Option<EncodedMessage>;
 }
-
 
 pub trait Encoding {
     fn encode(&self, message: &Message) -> Result<EncodedMessage>;

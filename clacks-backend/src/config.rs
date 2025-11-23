@@ -9,7 +9,11 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(address: impl Into<String>, queue_size: usize, environment: Environment) -> Result<Self> {
+    pub fn new(
+        address: impl Into<String>,
+        queue_size: usize,
+        environment: Environment,
+    ) -> Result<Self> {
         let address = address.into();
 
         if address.is_empty() {
@@ -18,7 +22,11 @@ impl Config {
         if queue_size == 0 {
             return Err(anyhow!("queue size must be positive").into());
         }
-        Ok(Self { address, queue_size, environment })
+        Ok(Self {
+            address,
+            queue_size,
+            environment,
+        })
     }
 
     pub fn address(&self) -> &str {
@@ -33,7 +41,6 @@ impl Config {
         &self.environment
     }
 }
-
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Environment {

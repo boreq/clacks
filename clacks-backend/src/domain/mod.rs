@@ -7,6 +7,8 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
+pub const MAX_MESSAGE_LEN: usize = 20;
+
 #[derive(Debug, Clone)]
 pub enum ShutterPosition {
     Open,
@@ -30,11 +32,14 @@ pub struct ShutterPositions {
 
 impl ShutterPositions {
     pub fn new(open_shutters: &[ShutterLocation]) -> Result<Self> {
-        let open_shutters_set: HashSet<ShutterLocation> = HashSet::from_iter(open_shutters.iter().map(|v| v.clone()));
+        let open_shutters_set: HashSet<ShutterLocation> =
+            HashSet::from_iter(open_shutters.iter().map(|v| v.clone()));
         if open_shutters_set.len() != open_shutters.len() {
-           return Err(anyhow!("shutter locations have duplicate values in them").into());
+            return Err(anyhow!("shutter locations have duplicate values in them").into());
         }
-        Ok(Self { open_shutters: open_shutters_set })
+        Ok(Self {
+            open_shutters: open_shutters_set,
+        })
     }
 
     pub fn all_closed(&self) -> bool {
@@ -57,6 +62,15 @@ impl Hash for ShutterPositions {
 
 pub struct Message {
     text: String,
+}
+
+impl Message {
+    pub(crate) fn new(text: String) -> Result<Self> {
+        if text.is_empty() {
+            return Err(anyhow!("empty message").into());
+        }
+        Ok(Self { text })
+    }
 }
 
 pub struct EncodedMessage {
@@ -120,14 +134,36 @@ pub struct Encoding {
 
 impl Default for Encoding {
     fn default() -> Self {
-        let mut characters:HashMap<String, ShutterPositions> = HashMap::new();
-        characters.insert("A".into(), ShutterPositions::new(&[ShutterLocation::MiddleLeft, ShutterLocation::BottomRight]).unwrap());
-        characters.insert("B".into(), ShutterPositions::new(&[ShutterLocation::MiddleRight, ShutterLocation::BottomLeft]).unwrap());
-        characters.insert("C".into(), ShutterPositions::new(&[ShutterLocation::MiddleLeft, ShutterLocation::MiddleRight]).unwrap());
+        let mut characters: HashMap<String, ShutterPositions> = HashMap::new();
+        characters.insert(
+            "A".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleLeft, ShutterLocation::BottomRight])
+                .unwrap(),
+        );
+        characters.insert(
+            "B".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleRight, ShutterLocation::BottomLeft])
+                .unwrap(),
+        );
+        characters.insert(
+            "C".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleLeft, ShutterLocation::MiddleRight])
+                .unwrap(),
+        );
         //todo
         // characters.insert(" ".into(), ShutterPositions::new([ShutterLocation::BottomLeft].into()));
 
-        Self::new(characters, ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::TopRight, ShutterLocation::BottomLeft,ShutterLocation::BottomRight]).unwrap()).unwrap()
+        Self::new(
+            characters,
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        )
+        .unwrap()
     }
 }
 
@@ -145,7 +181,10 @@ impl Encoding {
             .into());
         }
 
-        let characters: HashMap<String,ShutterPositions> = characters.iter().map(|(k, v)| (k.to_uppercase(), v.clone())).collect();
+        let characters: HashMap<String, ShutterPositions> = characters
+            .iter()
+            .map(|(k, v)| (k.to_uppercase(), v.clone()))
+            .collect();
 
         for (character, position) in &characters {
             if position.all_closed() {
@@ -178,7 +217,7 @@ impl Encoding {
         let mut parts = vec![];
 
         for c in message.text.chars() {
-            let uppercase_string =String::from(c).to_uppercase();
+            let uppercase_string = String::from(c).to_uppercase();
             match self.characters.get(&uppercase_string) {
                 Some(positions) => {
                     parts.push(EncodedMessagePart::new(
