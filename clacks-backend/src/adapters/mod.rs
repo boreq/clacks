@@ -146,6 +146,31 @@ impl app::Metrics for Metrics {
     }
 }
 
+#[derive(Clone)]
+pub struct EventPublisher {}
+
+impl Default for EventPublisher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EventPublisher {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl app::EventPublisher for EventPublisher {
+    fn publish_clacks_updated(&self) -> Result<()> {
+        todo!()
+    }
+
+    fn publish_message_added_to_queue(&self) -> Result<()> {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::ConfigLoader;

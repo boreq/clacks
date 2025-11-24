@@ -1,4 +1,4 @@
-use clacks_backend::adapters::{ConfigLoader, Metrics};
+use clacks_backend::adapters::{ConfigLoader, EventPublisher, Metrics};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
@@ -44,14 +44,16 @@ async fn run(config_file_path: &str) -> Result<()> {
     let config = config_loader.load()?;
 
     let metrics = Metrics::new()?;
+    let event_publisher = EventPublisher::new();
 
     let queue = domain::Queue::new(config.queue_size())?;
     let clacks = domain::Clacks::new(config.timing().clone(), queue.clone());
     let encoding = domain::Encoding::default();
 
-    let update_clacks_handler = UpdateClacksHandler::new(clacks, metrics.clone());
+    let update_clacks_handler =
+        UpdateClacksHandler::new(clacks, metrics.clone(), event_publisher.clone());
     let add_message_to_queue_handler =
-        AddMessageToQueueHandler::new(queue, metrics.clone(), encoding);
+        AddMessageToQueueHandler::new(queue, metrics.clone(), encoding, event_publisher.clone());
 
     let mut timer = timers::UpdateClacksTimer::new(update_clacks_handler);
     let server = http::Server::new();

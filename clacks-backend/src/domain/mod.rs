@@ -1,5 +1,6 @@
 pub mod time;
 
+use crate::app::ClacksUpdateResult;
 use crate::domain::time::Duration;
 use crate::errors::Error;
 use crate::errors::Result;
@@ -337,14 +338,13 @@ impl Clacks {
         }
     }
 
-    pub fn update(&self) -> Result<()> {
+    pub fn update(&self) -> Result<ClacksUpdateResult> {
         let mut current_state = self.current_state.lock().unwrap();
         if let Some(new_state) = current_state.update(&self.queue, &self.config)? {
             *current_state = new_state;
-            // todo send update
+            return Ok(ClacksUpdateResult::StateChanged);
         };
-
-        Ok(())
+        Ok(ClacksUpdateResult::StateNotChanged)
     }
 }
 

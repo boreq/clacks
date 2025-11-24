@@ -25,7 +25,12 @@ pub trait AddMessageToQueueHandler {
 }
 
 pub trait Clacks {
-    fn update(&self) -> Result<()>;
+    fn update(&self) -> Result<ClacksUpdateResult>;
+}
+
+pub enum ClacksUpdateResult {
+    StateChanged,
+    StateNotChanged,
 }
 
 pub trait Queue {
@@ -46,13 +51,18 @@ pub trait Metrics {
     );
 }
 
+pub trait EventPublisher {
+    fn publish_clacks_updated(&self) -> Result<()>;
+    fn publish_message_added_to_queue(&self) -> Result<()>;
+}
+
 pub enum ApplicationHandlerCallResult {
     Ok,
     Error,
 }
 
 impl Clacks for domain::Clacks {
-    fn update(&self) -> Result<()> {
+    fn update(&self) -> Result<ClacksUpdateResult> {
         self.update()
     }
 }
