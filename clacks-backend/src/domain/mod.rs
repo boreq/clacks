@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
-pub const MAX_MESSAGE_LEN: usize = 20;
+pub const MAX_MESSAGE_LEN_BYTES: usize = 20;
 
 #[derive(Debug, Clone)]
 pub enum ShutterPosition {
@@ -76,6 +76,10 @@ impl Message {
         if text.is_empty() {
             return Err(anyhow!("empty message").into());
         }
+        if text.len() > MAX_MESSAGE_LEN_BYTES {
+            // yes, it's unclear if that's what we want
+            return Err(anyhow!("message too long").into());
+        }
         Ok(Self { text })
     }
 }
@@ -118,20 +122,23 @@ impl EncodedMessage {
 #[derive(Clone)]
 pub struct EncodedMessagePart {
     element: MessageComponent,
-    encoding: ShutterPositions,
+    shutter_positions: ShutterPositions,
 }
 
 impl EncodedMessagePart {
     pub fn new(element: MessageComponent, encoding: ShutterPositions) -> Self {
-        Self { element, encoding }
+        Self {
+            element,
+            shutter_positions: encoding,
+        }
     }
 
     pub fn element(&self) -> &MessageComponent {
         &self.element
     }
 
-    pub fn encoding(&self) -> &ShutterPositions {
-        &self.encoding
+    pub fn shutter_positions(&self) -> &ShutterPositions {
+        &self.shutter_positions
     }
 }
 
@@ -139,7 +146,7 @@ impl EncodedMessagePart {}
 
 #[derive(Clone)]
 pub enum MessageComponent {
-    Character(char),
+    Character(String),
     End,
 }
 
@@ -199,8 +206,227 @@ impl Default for Encoding {
             ShutterPositions::new(&[ShutterLocation::MiddleLeft, ShutterLocation::MiddleRight])
                 .unwrap(),
         );
-        //todo
-        // characters.insert(" ".into(), ShutterPositions::new([ShutterLocation::BottomLeft].into()));
+        characters.insert(
+            "D".into(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::BottomLeft])
+                .unwrap(),
+        );
+        characters.insert(
+            "E".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "F".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "G".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "H".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "I".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "J".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "K".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "L".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "M".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "N".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "O".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::MiddleRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "O".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "Q".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "R".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "S".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "T".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "U".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "V".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "W".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::TopRight,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "X".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomLeft,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "Y".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            "Z".into(),
+            ShutterPositions::new(&[
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleLeft,
+                ShutterLocation::MiddleRight,
+                ShutterLocation::BottomRight,
+            ])
+            .unwrap(),
+        );
+        characters.insert(
+            " ".into(),
+            ShutterPositions::new(&[ShutterLocation::BottomLeft]).unwrap(),
+        );
 
         Self::new(
             characters,
@@ -270,7 +496,7 @@ impl Encoding {
             match self.characters.get(&uppercase_string) {
                 Some(positions) => {
                     parts.push(EncodedMessagePart::new(
-                        MessageComponent::Character(c),
+                        MessageComponent::Character(uppercase_string),
                         positions.clone(),
                     ));
                 }
@@ -285,6 +511,10 @@ impl Encoding {
         ));
 
         EncodedMessage::new(parts)
+    }
+
+    pub fn supported_characters(&self) -> Vec<String> {
+        self.characters.keys().cloned().collect()
     }
 }
 

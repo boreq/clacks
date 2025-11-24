@@ -1,5 +1,6 @@
 use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
+use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
@@ -58,10 +59,11 @@ async fn run(config_file_path: &str) -> Result<()> {
     let add_message_to_queue_handler = AddMessageToQueueHandler::new(
         queue.clone(),
         metrics.clone(),
-        encoding,
+        encoding.clone(),
         event_publisher.clone(),
     );
-    let get_state_handler = GetStateHandler::new(clacks, queue, metrics.clone());
+    let get_state_handler = GetStateHandler::new(clacks.clone(), queue.clone(), metrics.clone());
+    let get_config_handler = GetConfigHandler::new(encoding.clone(), metrics.clone());
 
     let mut timer = timers::UpdateClacksTimer::new(update_clacks_handler);
     let server = http::Server::new();
@@ -75,6 +77,7 @@ async fn run(config_file_path: &str) -> Result<()> {
     let http_deps = HttpDeps::new(
         get_state_handler,
         add_message_to_queue_handler,
+        get_config_handler,
         metrics,
         pubsub,
     );
@@ -100,33 +103,37 @@ where
 }
 
 #[derive(Clone)]
-struct HttpDeps<GSH, AMTQH> {
+struct HttpDeps<GSH, AMTQH, GCH> {
     get_state_handler: GSH,
     add_message_to_queue_handler: AMTQH,
+    get_config_handler: GCH,
     metrics: adapters::Metrics,
     pubsub: adapters::PubSub,
 }
 
-impl<GSH, AMTQH> HttpDeps<GSH, AMTQH> {
+impl<GSH, AMTQH, GCH> HttpDeps<GSH, AMTQH, GCH> {
     pub fn new(
         get_state_handler: GSH,
         add_message_to_queue_handler: AMTQH,
+        get_config_handler: GCH,
         metrics: adapters::Metrics,
         pubsub: PubSub,
     ) -> Self {
         Self {
             get_state_handler,
             add_message_to_queue_handler,
+            get_config_handler,
             metrics,
             pubsub,
         }
     }
 }
 
-impl<GSH, AMTQH> http::Deps for HttpDeps<GSH, AMTQH>
+impl<GSH, AMTQH, GCH> http::Deps for HttpDeps<GSH, AMTQH, GCH>
 where
     GSH: app::GetStateHandler,
     AMTQH: app::AddMessageToQueueHandler,
+    GCH: app::GetConfigHandler,
 {
     fn get_state_handler(&self) -> &impl app::GetStateHandler {
         &self.get_state_handler
@@ -134,6 +141,10 @@ where
 
     fn add_message_to_queue_handler(&self) -> &impl app::AddMessageToQueueHandler {
         &self.add_message_to_queue_handler
+    }
+
+    fn get_config_handler(&self) -> &impl app::GetConfigHandler {
+        &self.get_config_handler
     }
 
     fn metrics(&self) -> &Registry {

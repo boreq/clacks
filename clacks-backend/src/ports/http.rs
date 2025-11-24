@@ -1,4 +1,4 @@
-use crate::app::{AddMessageToQueue, GetStateHandler};
+use crate::app::{AddMessageToQueue, Config, GetConfigHandler, GetStateHandler};
 use crate::config::Environment;
 use crate::domain::{
     CurrentMessage, EncodedMessage, EncodedMessagePart, Message, MessageComponent, ShutterLocation,
@@ -63,6 +63,7 @@ impl Server {
             .route("/metrics", get(handle_get_metrics::<D>))
             .route("/queue", post(handle_post_queue::<D>))
             .route("/state-updates", any(handle_state_updates::<D>))
+            .route("/config", get(handle_get_config::<D>))
             .with_state(deps)
             .layer(
                 ServiceBuilder::new()
@@ -119,6 +120,17 @@ where
         let mut s1 = deps.subscriber().subscribe_to_message_added_to_queue();
         let mut s2 = deps.subscriber().subscribe_to_clacks_updated();
 
+        let state = deps.get_state_handler().get_state().unwrap();
+        let transport_state: TransportState = (&state).into();
+        let string_state = serde_json::to_string(&transport_state).unwrap();
+        let message = ws::Message::text(string_state);
+        match socket_sender.send(message).await {
+            Ok(_) => {}
+            Err(_) => {
+                return;
+            }
+        };
+
         loop {
             tokio::select! {
                 _ = s1.recv() => {
@@ -163,6 +175,33 @@ where
     }
 
     cancel.send(()).unwrap();
+}
+
+async fn handle_get_config<D>(
+    State(deps): State<D>,
+) -> std::result::Result<Json<TransportConfig>, AppError>
+where
+    D: Deps,
+{
+    let config = deps.get_config_handler().get_config()?;
+    let transport_config: TransportConfig = config.into();
+    Ok(transport_config.into())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportConfig {
+    supported_characters: Vec<String>,
+    max_message_len_in_bytes: usize,
+}
+
+impl From<Config> for TransportConfig {
+    fn from(value: Config) -> Self {
+        Self {
+            supported_characters: value.supported_characters().into(),
+            max_message_len_in_bytes: value.max_message_len_in_bytes(),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -217,14 +256,14 @@ impl From<&EncodedMessage> for TransportEncodedMessage {
 #[serde(rename_all = "camelCase")]
 struct TransportEncodedMessagePart {
     element: TransportMessageComponent,
-    encoding: TransportShutterPositions,
+    shutter_positions: TransportShutterPositions,
 }
 
 impl From<&EncodedMessagePart> for TransportEncodedMessagePart {
     fn from(value: &EncodedMessagePart) -> Self {
         Self {
             element: value.element().into(),
-            encoding: value.encoding().into(),
+            shutter_positions: value.shutter_positions().into(),
         }
     }
 }
@@ -287,6 +326,7 @@ struct PostQueueRequest {
 pub trait Deps {
     fn add_message_to_queue_handler(&self) -> &impl AddMessageToQueueHandler;
     fn get_state_handler(&self) -> &impl GetStateHandler;
+    fn get_config_handler(&self) -> &impl GetConfigHandler;
 
     fn metrics(&self) -> &prometheus::Registry;
     fn subscriber(&self) -> &impl EventSubscriber;

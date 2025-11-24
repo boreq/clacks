@@ -1,4 +1,5 @@
 pub mod add_message_to_queue;
+pub mod get_config;
 pub mod get_state;
 pub mod update_clacks;
 
@@ -29,6 +30,10 @@ pub trait GetStateHandler {
     fn get_state(&self) -> Result<State>;
 }
 
+pub trait GetConfigHandler {
+    fn get_config(&self) -> Result<Config>;
+}
+
 pub struct State {
     current_message: Option<CurrentMessage>,
     queue: Vec<EncodedMessage>,
@@ -51,6 +56,22 @@ impl State {
     }
 }
 
+pub struct Config {
+    // yes, it's unclear if that's what we want
+    supported_characters: Vec<String>,
+    max_message_len_in_bytes: usize,
+}
+
+impl Config {
+    pub fn supported_characters(&self) -> &[String] {
+        &self.supported_characters
+    }
+
+    pub fn max_message_len_in_bytes(&self) -> usize {
+        self.max_message_len_in_bytes
+    }
+}
+
 pub trait Clacks {
     fn update(&self) -> Result<ClacksUpdateResult>;
     fn current_message(&self) -> Option<CurrentMessage>;
@@ -69,6 +90,7 @@ pub trait Queue {
 
 pub trait Encoding {
     fn encode(&self, message: &Message) -> Result<EncodedMessage>;
+    fn supported_characters(&self) -> Vec<String>;
 }
 
 pub trait Metrics {
@@ -117,5 +139,9 @@ impl Queue for domain::Queue {
 impl Encoding for domain::Encoding {
     fn encode(&self, message: &Message) -> Result<EncodedMessage> {
         self.encode(message)
+    }
+
+    fn supported_characters(&self) -> Vec<String> {
+        self.supported_characters()
     }
 }
