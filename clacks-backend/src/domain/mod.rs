@@ -5,6 +5,7 @@ use crate::domain::time::Duration;
 use crate::errors::Error;
 use crate::errors::Result;
 use anyhow::anyhow;
+use std::collections::hash_set::Iter;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
@@ -46,6 +47,10 @@ impl ShutterPositions {
 
     pub fn all_closed(&self) -> bool {
         self.open_shutters.is_empty()
+    }
+
+    pub fn open_shutters(&self) -> Iter<'_, ShutterLocation> {
+        self.open_shutters.iter()
     }
 }
 
@@ -104,6 +109,10 @@ impl EncodedMessage {
         }
         Ok(EncodedMessage { parts })
     }
+
+    pub fn parts(&self) -> &[EncodedMessagePart] {
+        &self.parts
+    }
 }
 
 #[derive(Clone)]
@@ -115,6 +124,14 @@ pub struct EncodedMessagePart {
 impl EncodedMessagePart {
     pub fn new(element: MessageComponent, encoding: ShutterPositions) -> Self {
         Self { element, encoding }
+    }
+
+    pub fn element(&self) -> &MessageComponent {
+        &self.element
+    }
+
+    pub fn encoding(&self) -> &ShutterPositions {
+        &self.encoding
     }
 }
 
@@ -143,6 +160,18 @@ impl CurrentMessage {
             current,
             after,
         }
+    }
+
+    pub fn before(&self) -> &[EncodedMessagePart] {
+        &self.before
+    }
+
+    pub fn current(&self) -> Option<&EncodedMessagePart> {
+        self.current.as_ref()
+    }
+
+    pub fn after(&self) -> &[EncodedMessagePart] {
+        &self.after
     }
 }
 
@@ -329,6 +358,7 @@ impl TimingConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct Clacks {
     current_state: Arc<Mutex<Box<dyn ClacksState>>>,
     config: TimingConfig,

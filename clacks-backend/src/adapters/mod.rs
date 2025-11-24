@@ -3,12 +3,14 @@ use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};
 use crate::domain::TimingConfig;
 use crate::domain::time::Duration;
-use crate::errors::Result;
+use crate::errors::{Error, Result};
 use anyhow::anyhow;
 use prometheus::{CounterVec, HistogramOpts, HistogramVec, Opts, Registry, labels};
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::Receiver;
 
 pub struct ConfigLoader {
     path: PathBuf,
@@ -147,27 +149,52 @@ impl app::Metrics for Metrics {
 }
 
 #[derive(Clone)]
-pub struct EventPublisher {}
+pub struct PubSub {
+    clacks_updated: broadcast::Sender<()>,
+    message_added_to_queue: broadcast::Sender<()>,
+}
 
-impl Default for EventPublisher {
+impl Default for PubSub {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl EventPublisher {
+impl PubSub {
     pub fn new() -> Self {
-        Self {}
+        let (clacks_updated, _) = broadcast::channel(1);
+        let (message_added_to_queue, _) = broadcast::channel(1);
+
+        Self {
+            clacks_updated,
+            message_added_to_queue,
+        }
     }
 }
 
-impl app::EventPublisher for EventPublisher {
+impl app::EventPublisher for PubSub {
     fn publish_clacks_updated(&self) -> Result<()> {
-        todo!()
+        self.clacks_updated
+            .send(())
+            .map_err(|e| Error::Unknown(anyhow!(e)))?;
+        Ok(())
     }
 
     fn publish_message_added_to_queue(&self) -> Result<()> {
-        todo!()
+        self.message_added_to_queue
+            .send(())
+            .map_err(|e| Error::Unknown(anyhow!(e)))?;
+        Ok(())
+    }
+}
+
+impl PubSub {
+    pub fn subscribe_to_clacks_updated(&self) -> Receiver<()> {
+        self.clacks_updated.subscribe()
+    }
+
+    pub fn subscribe_to_message_added_to_queue(&self) -> Receiver<()> {
+        self.message_added_to_queue.subscribe()
     }
 }
 

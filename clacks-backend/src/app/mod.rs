@@ -34,6 +34,23 @@ pub struct State {
     queue: Vec<EncodedMessage>,
 }
 
+impl State {
+    pub fn new(current_message: Option<CurrentMessage>, queue: Vec<EncodedMessage>) -> Self {
+        Self {
+            current_message,
+            queue,
+        }
+    }
+
+    pub fn current_message(&self) -> Option<&CurrentMessage> {
+        self.current_message.as_ref()
+    }
+
+    pub fn queue(&self) -> &Vec<EncodedMessage> {
+        &self.queue
+    }
+}
+
 pub trait Clacks {
     fn update(&self) -> Result<ClacksUpdateResult>;
     fn current_message(&self) -> Option<CurrentMessage>;

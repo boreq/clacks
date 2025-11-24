@@ -1,9 +1,15 @@
-use crate::app::AddMessageToQueue;
+use crate::app::{AddMessageToQueue, GetStateHandler};
 use crate::config::Environment;
-use crate::domain::Message;
+use crate::domain::{
+    CurrentMessage, EncodedMessage, EncodedMessagePart, Message, MessageComponent, ShutterLocation,
+    ShutterPositions,
+};
 use crate::errors::{Error, Result};
-use crate::{app, config};
+use crate::{adapters, app, config};
 use app::AddMessageToQueueHandler;
+use axum::extract::ws::WebSocket;
+use axum::extract::{WebSocketUpgrade, ws};
+use axum::routing::any;
 use axum::{
     Router,
     routing::{get, post},
@@ -14,8 +20,13 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use futures_util::{sink::SinkExt, stream::StreamExt};
+use log::debug;
 use prometheus::TextEncoder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::Receiver;
+use tokio::task;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::{
@@ -51,6 +62,7 @@ impl Server {
         let app = Router::new()
             .route("/metrics", get(handle_get_metrics::<D>))
             .route("/queue", post(handle_post_queue::<D>))
+            .route("/state-updates", any(handle_state_updates::<D>))
             .with_state(deps)
             .layer(
                 ServiceBuilder::new()
@@ -87,6 +99,186 @@ where
     Ok(())
 }
 
+async fn handle_state_updates<D>(ws: WebSocketUpgrade, State(deps): State<D>) -> Response
+where
+    D: Deps + Send + 'static,
+{
+    ws.on_upgrade(move |websocket| handle_socket(websocket, deps))
+}
+
+async fn handle_socket<D>(websocket: WebSocket, deps: D)
+where
+    D: Deps + Send + 'static,
+{
+    let (cancel, _) = broadcast::channel(1);
+    let mut cancel_1 = cancel.subscribe();
+
+    let (mut socket_sender, mut socket_receiver) = websocket.split();
+
+    task::spawn(async move {
+        let mut s1 = deps.subscriber().subscribe_to_message_added_to_queue();
+        let mut s2 = deps.subscriber().subscribe_to_clacks_updated();
+
+        loop {
+            tokio::select! {
+                _ = s1.recv() => {
+                    let state= deps.get_state_handler().get_state().unwrap();
+                    let transport_state: TransportState = (&state).into();
+                    let string_state = serde_json::to_string(&transport_state).unwrap();
+                    let message = ws::Message::text(string_state);
+                    match socket_sender.send(message).await {
+                        Ok(_) => {
+                        },
+                        Err(_) => {
+                            return;
+                        },
+                    };
+                }
+                _ = s2.recv() => {
+                    let state= deps.get_state_handler().get_state().unwrap();
+                    let transport_state: TransportState = (&state).into();
+                    let string_state = serde_json::to_string(&transport_state).unwrap();
+                    let message = ws::Message::text(string_state);
+                    match socket_sender.send(message).await {
+                        Ok(_) => {
+                        },
+                        Err(_) => {
+                            return;
+                        },
+                    };
+                },
+                _ = cancel_1.recv() => {
+                    debug!("exiting send loop");
+                    return;
+                }
+            }
+        }
+    });
+
+    match socket_receiver.next().await {
+        None => {}
+        Some(_) => {
+            debug!("frontend sent us something which is odd")
+        }
+    }
+
+    cancel.send(()).unwrap();
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportState {
+    current_message: Option<TransportCurrentMessage>,
+    queue: Vec<TransportEncodedMessage>,
+}
+
+impl From<&app::State> for TransportState {
+    fn from(value: &app::State) -> Self {
+        Self {
+            current_message: value.current_message().map(|v| v.into()),
+            queue: value.queue().iter().map(|v| v.into()).collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportCurrentMessage {
+    before: Vec<TransportEncodedMessagePart>,
+    current: Option<TransportEncodedMessagePart>,
+    after: Vec<TransportEncodedMessagePart>,
+}
+
+impl From<&CurrentMessage> for TransportCurrentMessage {
+    fn from(value: &CurrentMessage) -> Self {
+        Self {
+            before: value.before().iter().map(|v| v.into()).collect(),
+            current: value.current().map(|v| v.into()),
+            after: value.after().iter().map(|v| v.into()).collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportEncodedMessage {
+    parts: Vec<TransportEncodedMessagePart>,
+}
+
+impl From<&EncodedMessage> for TransportEncodedMessage {
+    fn from(value: &EncodedMessage) -> Self {
+        Self {
+            parts: value.parts().iter().map(|x| x.into()).collect(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportEncodedMessagePart {
+    element: TransportMessageComponent,
+    encoding: TransportShutterPositions,
+}
+
+impl From<&EncodedMessagePart> for TransportEncodedMessagePart {
+    fn from(value: &EncodedMessagePart) -> Self {
+        Self {
+            element: value.element().into(),
+            encoding: value.encoding().into(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportMessageComponent {
+    kind: String,
+    character: Option<String>,
+}
+
+impl From<&MessageComponent> for TransportMessageComponent {
+    fn from(value: &MessageComponent) -> Self {
+        match value {
+            MessageComponent::Character(ch) => Self {
+                kind: "CHARACTER".into(),
+                character: Some(ch.to_string()),
+            },
+            MessageComponent::End => Self {
+                kind: "END".to_string(),
+                character: None,
+            },
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportShutterPositions {
+    open_shutters: Vec<String>,
+}
+
+impl From<&ShutterPositions> for TransportShutterPositions {
+    fn from(value: &ShutterPositions) -> Self {
+        Self {
+            open_shutters: value.open_shutters().map(|v| v.into()).collect(),
+        }
+    }
+}
+
+impl From<&ShutterLocation> for String {
+    fn from(value: &ShutterLocation) -> Self {
+        match value {
+            ShutterLocation::TopLeft => "TOP_LEFT",
+            ShutterLocation::TopRight => "TOP_RIGHT",
+            ShutterLocation::MiddleLeft => "MIDDLE_LEFT",
+            ShutterLocation::MiddleRight => "MIDDLE_RIGHT",
+            ShutterLocation::BottomLeft => "BOTTOM_LEFT",
+            ShutterLocation::BottomRight => "BOTTOM_RIGHT",
+        }
+        .into()
+    }
+}
+
 #[derive(Deserialize)]
 struct PostQueueRequest {
     message: String,
@@ -94,11 +286,28 @@ struct PostQueueRequest {
 
 pub trait Deps {
     fn add_message_to_queue_handler(&self) -> &impl AddMessageToQueueHandler;
+    fn get_state_handler(&self) -> &impl GetStateHandler;
+
     fn metrics(&self) -> &prometheus::Registry;
+    fn subscriber(&self) -> &impl EventSubscriber;
+}
+
+pub trait EventSubscriber {
+    fn subscribe_to_clacks_updated(&self) -> Receiver<()>;
+    fn subscribe_to_message_added_to_queue(&self) -> Receiver<()>;
+}
+
+impl EventSubscriber for adapters::PubSub {
+    fn subscribe_to_clacks_updated(&self) -> Receiver<()> {
+        self.subscribe_to_clacks_updated()
+    }
+
+    fn subscribe_to_message_added_to_queue(&self) -> Receiver<()> {
+        self.subscribe_to_message_added_to_queue()
+    }
 }
 
 enum AppError {
-    NotFound,
     BadRequest,
     UnknownError,
 }
@@ -106,7 +315,6 @@ enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            AppError::NotFound => (StatusCode::NOT_FOUND, "Not found").into_response(),
             AppError::BadRequest => (StatusCode::BAD_REQUEST, "Bad request").into_response(),
             AppError::UnknownError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
