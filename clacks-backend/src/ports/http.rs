@@ -61,9 +61,9 @@ impl Server {
 
         let app = Router::new()
             .route("/metrics", get(handle_get_metrics::<D>))
-            .route("/queue", post(handle_post_queue::<D>))
-            .route("/state-updates", any(handle_state_updates::<D>))
-            .route("/config", get(handle_get_config::<D>))
+            .route("/api/queue", post(handle_post_queue::<D>))
+            .route("/api/state-updates", any(handle_state_updates::<D>))
+            .route("/api/config", get(handle_get_config::<D>))
             .with_state(deps)
             .layer(
                 ServiceBuilder::new()

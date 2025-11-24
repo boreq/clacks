@@ -29,10 +29,10 @@
       </ul>
 
       <div class="message-form">
-          <input type="text" placeholder="ABC...">
+          <input type="text" placeholder="ABC..." v-model="newMessageText">
           <button>
               <ChevronUp></ChevronUp>
-              ADD TO QUEUE
+              <span class="text">ADD TO QUEUE</span>
               <ChevronUp></ChevronUp>
           </button>
       </div>
@@ -44,7 +44,8 @@ import { defineComponent } from 'vue';
 import { ShutterPositions, ShutterLocation, ShutterPosition, CurrentMessage, Message } from '@/types';
 import { ChevronUp } from 'lucide-vue-next';
 import ShuttersPreview from '@/components/ShuttersPreview.vue'; 
-import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue'; 
+import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue';
+import { API, ConfigResponse } from "@/api";
 
 export default defineComponent({
   name: 'HomeView',
@@ -52,6 +53,12 @@ export default defineComponent({
       ShuttersPreview,
       CurrentMessagePreview,
       ChevronUp,
+  },
+  created(): any {
+    this.api.getConfig()
+        .then(response => {
+          this.config = response.data;
+        })
   },
   mounted(): void {
     window.setInterval(this.updateData, 2000);
@@ -96,7 +103,19 @@ export default defineComponent({
         shutterPositions,
         message,
         queue,
+        api: new API(),
+        config: null as ConfigResponse | null,
+        newMessageText: '',
     };
+  },
+  watch: {
+    newMessageText(newValue): void {
+      this.newMessageText = this.newMessageText
+          .toUpperCase()
+          .split('')
+          .filter((char, index) => this.config?.supportedCharacters.includes(char) && index < this.config?.maxMessageLenInBytes)
+          .join('');
+    },
   },
   methods: {
     updateData() {
@@ -197,11 +216,17 @@ h1 {
 
     button {
         border-left: 0;
+        user-select: none;
 
         &:hover {
             color: $color-dark;
             background-color: $color-primary;
             cursor: pointer;
+        }
+
+        &:active {
+          color: $color-primary;
+          background-color: $color-dark;
         }
     }
 }
