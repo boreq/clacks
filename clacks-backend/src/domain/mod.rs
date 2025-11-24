@@ -75,6 +75,7 @@ impl Message {
     }
 }
 
+#[derive(Clone)]
 pub struct EncodedMessage {
     parts: Vec<EncodedMessagePart>,
 }
@@ -288,6 +289,11 @@ impl Queue {
         let mut messages = self.messages.lock().unwrap();
         messages.pop()
     }
+
+    pub fn get_messages(&self) -> Result<Vec<EncodedMessage>> {
+        let messages = self.messages.lock().unwrap();
+        Ok(messages.clone())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -346,10 +352,16 @@ impl Clacks {
         };
         Ok(ClacksUpdateResult::StateNotChanged)
     }
+
+    pub fn current_message(&self) -> Option<CurrentMessage> {
+        let current_state = self.current_state.lock().unwrap();
+        current_state.current_message()
+    }
 }
 
 trait ClacksState: Send {
     fn update(&self, queue: &Queue, config: &TimingConfig) -> Result<Option<Box<dyn ClacksState>>>;
+    fn current_message(&self) -> Option<CurrentMessage>;
 }
 
 struct ClacksWaitingForNextMessage {}
@@ -372,6 +384,10 @@ impl ClacksState for ClacksWaitingForNextMessage {
             )))),
             None => Ok(None),
         }
+    }
+
+    fn current_message(&self) -> Option<CurrentMessage> {
+        None
     }
 }
 
@@ -427,6 +443,14 @@ impl ClacksState for ClacksShowingCharacter {
 
         Ok(Some(Box::new(ClacksPausingBetweenMessages::new())))
     }
+
+    fn current_message(&self) -> Option<CurrentMessage> {
+        Some(CurrentMessage::new(
+            self.before.clone(),
+            Some(self.current.clone()),
+            self.after.clone(),
+        ))
+    }
 }
 
 struct ClacksPausingBetweenCharacters {
@@ -469,6 +493,14 @@ impl ClacksState for ClacksPausingBetweenCharacters {
             self,
         )?)))
     }
+
+    fn current_message(&self) -> Option<CurrentMessage> {
+        Some(CurrentMessage::new(
+            self.before.clone(),
+            None,
+            self.after.clone(),
+        ))
+    }
 }
 
 struct ClacksPausingBetweenMessages {
@@ -495,5 +527,9 @@ impl ClacksState for ClacksPausingBetweenMessages {
         }
 
         Ok(Some(Box::new(ClacksWaitingForNextMessage::new())))
+    }
+
+    fn current_message(&self) -> Option<CurrentMessage> {
+        None
     }
 }

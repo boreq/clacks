@@ -1,9 +1,10 @@
 pub mod add_message_to_queue;
+pub mod get_state;
 pub mod update_clacks;
 
 use crate::domain;
 use crate::domain::time::Duration;
-use crate::domain::{EncodedMessage, Message};
+use crate::domain::{CurrentMessage, EncodedMessage, Message};
 use crate::errors::Result;
 
 pub trait UpdateClacksHandler {
@@ -24,8 +25,18 @@ pub trait AddMessageToQueueHandler {
     fn handle(&self, add_message_to_queue: AddMessageToQueue) -> Result<()>;
 }
 
+pub trait GetStateHandler {
+    fn get_state(&self) -> Result<State>;
+}
+
+pub struct State {
+    current_message: Option<CurrentMessage>,
+    queue: Vec<EncodedMessage>,
+}
+
 pub trait Clacks {
     fn update(&self) -> Result<ClacksUpdateResult>;
+    fn current_message(&self) -> Option<CurrentMessage>;
 }
 
 pub enum ClacksUpdateResult {
@@ -36,6 +47,7 @@ pub enum ClacksUpdateResult {
 pub trait Queue {
     fn add_message(&self, message: EncodedMessage) -> Result<()>;
     fn pop_message(&self) -> Option<EncodedMessage>;
+    fn get_messages(&self) -> Result<Vec<EncodedMessage>>;
 }
 
 pub trait Encoding {
@@ -65,6 +77,10 @@ impl Clacks for domain::Clacks {
     fn update(&self) -> Result<ClacksUpdateResult> {
         self.update()
     }
+
+    fn current_message(&self) -> Option<CurrentMessage> {
+        self.current_message()
+    }
 }
 
 impl Queue for domain::Queue {
@@ -74,6 +90,10 @@ impl Queue for domain::Queue {
 
     fn pop_message(&self) -> Option<EncodedMessage> {
         self.pop_message()
+    }
+
+    fn get_messages(&self) -> Result<Vec<EncodedMessage>> {
+        self.get_messages()
     }
 }
 
