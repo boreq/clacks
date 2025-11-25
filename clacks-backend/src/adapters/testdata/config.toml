@@ -1,8 +1,10 @@
 address = "0.0.0.0:8080"
 queue_size = 10
 environment = "development"
+messages_to_inject = ["freeside", "milliways", "GNU TERRY PRATCHETT"]
 
 [timing]
 show_character_for = 1
 pause_between_characters_for = 2
 pause_between_messages_for = 3
+inject_message_if_no_next_message_after_pausing_between_messages_for = 4

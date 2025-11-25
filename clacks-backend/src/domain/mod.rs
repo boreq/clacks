@@ -5,6 +5,7 @@ use crate::domain::time::Duration;
 use crate::errors::Error;
 use crate::errors::Result;
 use anyhow::anyhow;
+use rand::seq::IndexedRandom;
 use std::collections::hash_set::Iter;
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -67,12 +68,15 @@ impl Hash for ShutterPositions {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Message {
     text: String,
 }
 
 impl Message {
-    pub(crate) fn new(text: String) -> Result<Self> {
+    pub(crate) fn new(text: impl Into<String>) -> Result<Self> {
+        let text = text.into();
+
         if text.is_empty() {
             return Err(anyhow!("empty message").into());
         }
@@ -555,11 +559,29 @@ impl Queue {
     }
 }
 
+#[derive(Clone)]
+pub struct MessagesToInject {
+    messages: Arc<Vec<EncodedMessage>>,
+}
+
+impl MessagesToInject {
+    pub fn new(messages: Vec<EncodedMessage>) -> Self {
+        Self {
+            messages: Arc::new(messages),
+        }
+    }
+
+    pub fn get(&self) -> Option<&EncodedMessage> {
+        self.messages.choose(&mut rand::rng())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TimingConfig {
     show_character_for: Duration,
     pause_between_characters_for: Duration,
     pause_between_messages_for: Duration,
+    inject_message_if_no_next_message_after_pausing_between_messages_for: Duration,
 }
 
 impl TimingConfig {
@@ -567,11 +589,13 @@ impl TimingConfig {
         show_character_for: Duration,
         pause_between_characters_for: Duration,
         pause_between_messages_for: Duration,
+        inject_message_if_no_next_message_after_pausing_between_messages_for: Duration,
     ) -> Self {
         Self {
             show_character_for,
             pause_between_characters_for,
             pause_between_messages_for,
+            inject_message_if_no_next_message_after_pausing_between_messages_for,
         }
     }
 
@@ -586,6 +610,12 @@ impl TimingConfig {
     pub fn pause_between_messages_for(&self) -> &Duration {
         &self.pause_between_messages_for
     }
+
+    pub fn inject_message_if_no_next_message_after_pausing_between_messages_for(
+        &self,
+    ) -> &Duration {
+        &self.inject_message_if_no_next_message_after_pausing_between_messages_for
+    }
 }
 
 #[derive(Clone)]
@@ -593,20 +623,24 @@ pub struct Clacks {
     current_state: Arc<Mutex<Box<dyn ClacksState>>>,
     config: TimingConfig,
     queue: Queue,
+    messages_to_inject: MessagesToInject,
 }
 
 impl Clacks {
-    pub fn new(config: TimingConfig, queue: Queue) -> Self {
+    pub fn new(config: TimingConfig, queue: Queue, messages_to_inject: MessagesToInject) -> Self {
         Self {
             current_state: Arc::new(Mutex::new(Box::new(ClacksWaitingForNextMessage::new()))),
             config,
             queue,
+            messages_to_inject,
         }
     }
 
     pub fn update(&self) -> Result<ClacksUpdateResult> {
         let mut current_state = self.current_state.lock().unwrap();
-        if let Some(new_state) = current_state.update(&self.queue, &self.config)? {
+        if let Some(new_state) =
+            current_state.update(&self.queue, &self.config, &self.messages_to_inject)?
+        {
             *current_state = new_state;
             return Ok(ClacksUpdateResult::StateChanged);
         };
@@ -620,15 +654,24 @@ impl Clacks {
 }
 
 trait ClacksState: Send {
-    fn update(&self, queue: &Queue, config: &TimingConfig) -> Result<Option<Box<dyn ClacksState>>>;
+    fn update(
+        &self,
+        queue: &Queue,
+        config: &TimingConfig,
+        messages_to_inject: &MessagesToInject,
+    ) -> Result<Option<Box<dyn ClacksState>>>;
     fn current_message(&self) -> Option<CurrentMessage>;
 }
 
-struct ClacksWaitingForNextMessage {}
+struct ClacksWaitingForNextMessage {
+    started_at: time::DateTime,
+}
 
 impl ClacksWaitingForNextMessage {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            started_at: time::DateTime::now(),
+        }
     }
 }
 
@@ -637,13 +680,27 @@ impl ClacksState for ClacksWaitingForNextMessage {
         &self,
         queue: &Queue,
         _config: &TimingConfig,
+        messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
         match queue.pop_message() {
-            Some(encoded_message) => Ok(Some(Box::new(ClacksShowingCharacter::new_message(
-                encoded_message,
-            )))),
-            None => Ok(None),
+            Some(encoded_message) => {
+                return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
+                    encoded_message,
+                ))));
+            }
+            None => {}
         }
+
+        match messages_to_inject.get() {
+            Some(encoded_message) => {
+                return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
+                    encoded_message.clone(),
+                ))));
+            }
+            None => {}
+        }
+
+        Ok(None)
     }
 
     fn current_message(&self) -> Option<CurrentMessage> {
@@ -691,6 +748,7 @@ impl ClacksState for ClacksShowingCharacter {
         &self,
         _queue: &Queue,
         config: &TimingConfig,
+        _messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
         let since = &time::DateTime::now() - &self.started_at;
         if since < config.show_character_for {
@@ -743,6 +801,7 @@ impl ClacksState for ClacksPausingBetweenCharacters {
         &self,
         _queue: &Queue,
         config: &TimingConfig,
+        _messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
         let since = &time::DateTime::now() - &self.started_at;
         if since < config.pause_between_characters_for {
@@ -780,6 +839,7 @@ impl ClacksState for ClacksPausingBetweenMessages {
         &self,
         _queue: &Queue,
         config: &TimingConfig,
+        _messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
         let since = &time::DateTime::now() - &self.started_at;
         if since < config.pause_between_messages_for {

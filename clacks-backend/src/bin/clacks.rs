@@ -50,8 +50,16 @@ async fn run(config_file_path: &str) -> Result<()> {
     let pubsub = PubSub::new();
 
     let queue = domain::Queue::new(config.queue_size())?;
-    let clacks = domain::Clacks::new(config.timing().clone(), queue.clone());
     let encoding = domain::Encoding::default();
+
+    let messages_to_inject = config
+        .messages_to_inject()
+        .into_iter()
+        .map(|v| encoding.encode(v))
+        .collect::<Result<Vec<_>>>()?;
+    let messages_to_inject = domain::MessagesToInject::new(messages_to_inject);
+
+    let clacks = domain::Clacks::new(config.timing().clone(), queue.clone(), messages_to_inject);
 
     let update_clacks_handler =
         UpdateClacksHandler::new(clacks.clone(), metrics.clone(), pubsub.clone());

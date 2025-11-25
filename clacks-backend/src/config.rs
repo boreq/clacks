@@ -1,4 +1,4 @@
-use crate::domain::TimingConfig;
+use crate::domain::{Message, MessagesToInject, TimingConfig};
 use crate::errors::Result;
 use anyhow::anyhow;
 
@@ -7,6 +7,7 @@ pub struct Config {
     address: String,
     queue_size: usize,
     environment: Environment,
+    messages_to_inject: Vec<Message>,
     timing: TimingConfig,
 }
 
@@ -15,6 +16,7 @@ impl Config {
         address: impl Into<String>,
         queue_size: usize,
         environment: Environment,
+        messages_to_inject: Vec<Message>,
         timing: TimingConfig,
     ) -> Result<Self> {
         let address = address.into();
@@ -28,6 +30,7 @@ impl Config {
             address,
             queue_size,
             environment,
+            messages_to_inject,
             timing,
         })
     }
@@ -42,6 +45,10 @@ impl Config {
 
     pub fn environment(&self) -> &Environment {
         &self.environment
+    }
+
+    pub fn messages_to_inject(&self) -> &[Message] {
+        &self.messages_to_inject
     }
 
     pub fn timing(&self) -> &TimingConfig {

@@ -1,8 +1,8 @@
 use crate::app;
 use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};
-use crate::domain::TimingConfig;
 use crate::domain::time::Duration;
+use crate::domain::{Message, TimingConfig};
 use crate::errors::Result;
 use anyhow::anyhow;
 use log::debug;
@@ -34,6 +34,7 @@ struct TomlConfig {
     address: String,
     queue_size: usize,
     environment: String,
+    messages_to_inject: Vec<String>,
     timing: TomlTimingConfig,
 }
 
@@ -41,10 +42,17 @@ impl TryFrom<TomlConfig> for Config {
     type Error = crate::errors::Error;
 
     fn try_from(value: TomlConfig) -> std::result::Result<Self, Self::Error> {
+        let messages_to_inject: Vec<Message> = value
+            .messages_to_inject
+            .into_iter()
+            .map(|v| Message::new(v))
+            .collect::<Result<Vec<_>>>()?;
+
         Config::new(
             value.address,
             value.queue_size,
             value.environment.try_into()?,
+            messages_to_inject,
             value.timing.try_into()?,
         )
     }
@@ -67,6 +75,7 @@ struct TomlTimingConfig {
     show_character_for: u64,
     pause_between_characters_for: u64,
     pause_between_messages_for: u64,
+    inject_message_if_no_next_message_after_pausing_between_messages_for: u64,
 }
 
 impl TryFrom<TomlTimingConfig> for TimingConfig {
@@ -77,6 +86,9 @@ impl TryFrom<TomlTimingConfig> for TimingConfig {
             Duration::new_from_seconds(value.show_character_for),
             Duration::new_from_seconds(value.pause_between_characters_for),
             Duration::new_from_seconds(value.pause_between_messages_for),
+            Duration::new_from_seconds(
+                value.inject_message_if_no_next_message_after_pausing_between_messages_for,
+            ),
         ))
     }
 }
@@ -206,6 +218,7 @@ mod tests {
     use super::ConfigLoader;
     use super::*;
     use crate::config::Config;
+    use crate::domain::Message;
     use crate::fixtures;
 
     #[test]
@@ -214,10 +227,16 @@ mod tests {
             "0.0.0.0:8080",
             10,
             Environment::Development,
+            vec![
+                Message::new("freeside")?,
+                Message::new("milliways")?,
+                Message::new("GNU TERRY PRATCHETT")?,
+            ],
             TimingConfig::new(
                 Duration::new_from_seconds(1),
                 Duration::new_from_seconds(2),
                 Duration::new_from_seconds(3),
+                Duration::new_from_seconds(4),
             ),
         )?;
         let loader = ConfigLoader::new(fixtures::test_file_path(
