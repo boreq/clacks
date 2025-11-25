@@ -4,6 +4,15 @@
       https://onlyclacks.com
     </h1>
 
+    <h2>
+      <div>
+        Am I broken? <Phone class="icon"></Phone> 2677
+      </div>
+      <a href="https://github.com/boreq/clacks">
+        https://github.com/boreq/clacks
+      </a>
+    </h2>
+
     <div class="visualisation">
       <div class="loading-indicator" v-if="visualisationLoading">
         <LoadingIndicator></LoadingIndicator>
@@ -78,7 +87,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { ChevronUp, ArrowDown } from 'lucide-vue-next';
+import { ChevronUp, ArrowDown, Phone } from 'lucide-vue-next';
 import { API, ConfigResponse, StateUpdate } from '@/api';
 
 import ShuttersPreview from '@/components/ShuttersPreview.vue';
@@ -109,6 +118,7 @@ export default defineComponent({
 
     ChevronUp,
     ArrowDown,
+    Phone,
   },
   data() {
     return {
@@ -212,10 +222,27 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+h1, h2 {
+  text-transform: uppercase;
+}
+
 h1 {
+  color: $color-primary;
+  font-weight: bold;
+}
+
+h2 {
+  color: $color-neutral;
+
+  a {
     color: $color-primary;
-    text-transform: uppercase;
-    font-weight: bold;
+    font-size: .5em;
+  }
+
+  .icon {
+    width: .8em;
+    height: .8em;
+  }
 }
 
 @media not (display-mode: fullscreen) {
