@@ -682,22 +682,16 @@ impl ClacksState for ClacksWaitingForNextMessage {
         _config: &TimingConfig,
         messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
-        match queue.pop_message() {
-            Some(encoded_message) => {
-                return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
-                    encoded_message,
-                ))));
-            }
-            None => {}
+        if let Some(encoded_message) = queue.pop_message() {
+            return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
+                encoded_message,
+            ))));
         }
 
-        match messages_to_inject.get() {
-            Some(encoded_message) => {
-                return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
-                    encoded_message.clone(),
-                ))));
-            }
-            None => {}
+        if let Some(encoded_message) = messages_to_inject.get() {
+            return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
+                encoded_message.clone(),
+            ))));
         }
 
         Ok(None)

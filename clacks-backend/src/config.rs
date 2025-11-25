@@ -1,4 +1,4 @@
-use crate::domain::{Message, MessagesToInject, TimingConfig};
+use crate::domain::{Message, TimingConfig};
 use crate::errors::Result;
 use anyhow::anyhow;
 

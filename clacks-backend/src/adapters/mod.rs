@@ -45,7 +45,7 @@ impl TryFrom<TomlConfig> for Config {
         let messages_to_inject: Vec<Message> = value
             .messages_to_inject
             .into_iter()
-            .map(|v| Message::new(v))
+            .map(Message::new)
             .collect::<Result<Vec<_>>>()?;
 
         Config::new(

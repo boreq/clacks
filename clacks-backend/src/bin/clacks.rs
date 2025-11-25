@@ -54,7 +54,7 @@ async fn run(config_file_path: &str) -> Result<()> {
 
     let messages_to_inject = config
         .messages_to_inject()
-        .into_iter()
+        .iter()
         .map(|v| encoding.encode(v))
         .collect::<Result<Vec<_>>>()?;
     let messages_to_inject = domain::MessagesToInject::new(messages_to_inject);
