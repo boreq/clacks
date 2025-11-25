@@ -11,11 +11,47 @@
             font-family: "OCR-A";
             src: url("<%= BASE_URL %>ocr-a/ocr-a.ttf") format("truetype");
         }
+
+        html {
+            background-color: #000000;
+        }
+
+        noscript {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            text-transform: uppercase;
+            font-size: 3em;
+            font-family: "OCR-A", monospace;
+            font-weight: bold;
+        }
+
+        noscript div {
+            padding: 1em;
+            margin: 1em;
+            background-color: #ffff00;
+            color: #000000;
+        }
     </style>
   </head>
   <body>
     <noscript>
-      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+      <div>
+        This visualisation doesn't work with JavaScript disabled
+      </div>
+
+      <div>
+        PS yes I know that CSS is turing complete
+      </div>
+
+      <div>
+        PSS yes I know that this could have also been solved with http-equiv="Refresh"
+      </div>
+
+      <div>
+        PSSS GNU TERRY PRATCHETT
+      </div>
     </noscript>
     <div id="app"></div>
     <!-- built files will be auto injected -->
