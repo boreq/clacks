@@ -9,7 +9,7 @@
         <LoadingIndicator></LoadingIndicator>
       </div>
 
-      <div class="error" v-if="visualisationLoadingError">
+      <div class="error" v-if="visualisationError">
         Error loading the visualisation?!
         Try refreshing or something, I don't know, I'm just an error message.
       </div>
@@ -93,7 +93,7 @@ enum NewMessageFormState {
 
 enum VisualisationState {
   Loading,
-  LoadingError,
+  Error,
   Ready,
 }
 
@@ -138,11 +138,11 @@ export default defineComponent({
     });
 
     socket.addEventListener('error', () => {
-      this.visualisationState = VisualisationState.LoadingError;
+      this.visualisationState = VisualisationState.Error;
     });
 
     socket.addEventListener('close', () => {
-      this.visualisationState = VisualisationState.LoadingError;
+      this.visualisationState = VisualisationState.Error;
     });
   },
   watch: {
@@ -199,8 +199,8 @@ export default defineComponent({
     visualisationLoading(): boolean {
       return this.visualisationState === VisualisationState.Loading;
     },
-    visualisationLoadingError(): boolean {
-      return this.visualisationState === VisualisationState.LoadingError;
+    visualisationError(): boolean {
+      return this.visualisationState === VisualisationState.Error;
     },
     changingMessage(): boolean {
       return !this.update?.currentMessage && !!this.update?.queue && this.update?.queue.length > 0;
