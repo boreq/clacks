@@ -9,6 +9,7 @@ use prometheus::{CounterVec, HistogramOpts, HistogramVec, Opts, Registry, labels
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Receiver;
 
@@ -151,7 +152,9 @@ impl app::Metrics for Metrics {
 #[derive(Clone)]
 pub struct PubSub {
     clacks_updated: broadcast::Sender<()>,
+    _clacks_updated_receiver: Arc<broadcast::Receiver<()>>,
     message_added_to_queue: broadcast::Sender<()>,
+    _message_added_to_queue_receiver: Arc<broadcast::Receiver<()>>,
 }
 
 impl Default for PubSub {
@@ -162,12 +165,14 @@ impl Default for PubSub {
 
 impl PubSub {
     pub fn new() -> Self {
-        let (clacks_updated, _) = broadcast::channel(1);
-        let (message_added_to_queue, _) = broadcast::channel(1);
+        let (clacks_updated, clacks_updated_receiver) = broadcast::channel(1);
+        let (message_added_to_queue, message_added_to_queue_receiver) = broadcast::channel(1);
 
         Self {
             clacks_updated,
+            _clacks_updated_receiver: Arc::new(clacks_updated_receiver),
             message_added_to_queue,
+            _message_added_to_queue_receiver: Arc::new(message_added_to_queue_receiver),
         }
     }
 }
