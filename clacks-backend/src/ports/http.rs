@@ -176,7 +176,6 @@ where
                     };
                 },
                 _ = cancel_1.recv() => {
-                    debug!("exiting send loop");
                     return;
                 }
             }

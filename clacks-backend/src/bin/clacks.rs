@@ -47,7 +47,6 @@ async fn run(config_file_path: &str) -> Result<()> {
     let config = config_loader.load()?;
 
     let metrics = Metrics::new()?;
-    let event_publisher = PubSub::new();
     let pubsub = PubSub::new();
 
     let queue = domain::Queue::new(config.queue_size())?;
@@ -55,12 +54,12 @@ async fn run(config_file_path: &str) -> Result<()> {
     let encoding = domain::Encoding::default();
 
     let update_clacks_handler =
-        UpdateClacksHandler::new(clacks.clone(), metrics.clone(), event_publisher.clone());
+        UpdateClacksHandler::new(clacks.clone(), metrics.clone(), pubsub.clone());
     let add_message_to_queue_handler = AddMessageToQueueHandler::new(
         queue.clone(),
         metrics.clone(),
         encoding.clone(),
-        event_publisher.clone(),
+        pubsub.clone(),
     );
     let get_state_handler = GetStateHandler::new(clacks.clone(), queue.clone(), metrics.clone());
     let get_config_handler = GetConfigHandler::new(encoding.clone(), metrics.clone());

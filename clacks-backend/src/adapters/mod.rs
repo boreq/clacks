@@ -3,13 +3,13 @@ use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};
 use crate::domain::TimingConfig;
 use crate::domain::time::Duration;
-use crate::errors::{Error, Result};
+use crate::errors::Result;
 use anyhow::anyhow;
+use log::debug;
 use prometheus::{CounterVec, HistogramOpts, HistogramVec, Opts, Registry, labels};
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Receiver;
 
@@ -152,9 +152,7 @@ impl app::Metrics for Metrics {
 #[derive(Clone)]
 pub struct PubSub {
     clacks_updated: broadcast::Sender<()>,
-    _clacks_updated_receiver: Arc<broadcast::Receiver<()>>,
     message_added_to_queue: broadcast::Sender<()>,
-    _message_added_to_queue_receiver: Arc<broadcast::Receiver<()>>,
 }
 
 impl Default for PubSub {
@@ -165,30 +163,30 @@ impl Default for PubSub {
 
 impl PubSub {
     pub fn new() -> Self {
-        let (clacks_updated, clacks_updated_receiver) = broadcast::channel(1);
-        let (message_added_to_queue, message_added_to_queue_receiver) = broadcast::channel(1);
+        let (clacks_updated, _) = broadcast::channel(1);
+        let (message_added_to_queue, _) = broadcast::channel(1);
 
         Self {
             clacks_updated,
-            _clacks_updated_receiver: Arc::new(clacks_updated_receiver),
             message_added_to_queue,
-            _message_added_to_queue_receiver: Arc::new(message_added_to_queue_receiver),
         }
     }
 }
 
 impl app::EventPublisher for PubSub {
     fn publish_clacks_updated(&self) -> Result<()> {
-        self.clacks_updated
-            .send(())
-            .map_err(|e| Error::Unknown(anyhow!(e)))?;
+        // if there are no receivers next line will return an error
+        if let Err(err) = self.clacks_updated.send(()) {
+            debug!("publish clacks updated event failed: {:?}", err);
+        }
         Ok(())
     }
 
     fn publish_message_added_to_queue(&self) -> Result<()> {
-        self.message_added_to_queue
-            .send(())
-            .map_err(|e| Error::Unknown(anyhow!(e)))?;
+        // if there are no receivers next line will return an error
+        if let Err(err) = self.message_added_to_queue.send(()) {
+            debug!("publish added to queue failed: {:?}", err);
+        }
         Ok(())
     }
 }
