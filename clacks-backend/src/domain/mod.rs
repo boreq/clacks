@@ -679,7 +679,7 @@ impl ClacksState for ClacksWaitingForNextMessage {
     fn update(
         &self,
         queue: &Queue,
-        _config: &TimingConfig,
+        config: &TimingConfig,
         messages_to_inject: &MessagesToInject,
     ) -> Result<Option<Box<dyn ClacksState>>> {
         if let Some(encoded_message) = queue.pop_message() {
@@ -688,7 +688,10 @@ impl ClacksState for ClacksWaitingForNextMessage {
             ))));
         }
 
-        if let Some(encoded_message) = messages_to_inject.get() {
+        let since = &time::DateTime::now() - &self.started_at;
+        if since >= config.inject_message_if_no_next_message_after_pausing_between_messages_for
+            && let Some(encoded_message) = messages_to_inject.get()
+        {
             return Ok(Some(Box::new(ClacksShowingCharacter::new_message(
                 encoded_message.clone(),
             ))));
