@@ -64,11 +64,13 @@
       <input type="text"
         placeholder="YOU C-MAIL MESSAGE HERE..."
         v-model="newMessageText"
-        @keydown.enter="submitMessageForm">
+        @keydown.enter="submitMessageForm"
+      >
       <button @click="submitMessageForm">
         <ChevronUp />
         <span class="text">SEND</span>
         <ChevronUp />
+        <LoadingIndicator v-if="messageFormSubmitting"></LoadingIndicator>
       </button>
     </div>
   </div>
@@ -306,6 +308,22 @@ h1 {
     button {
         border-left: 0;
         user-select: none;
+        position: relative;
+
+        .text {
+          display: inline-block;
+          padding: 0 .5em;
+        }
+
+        .loading-indicator {
+          position: absolute;
+          left: 0;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          height: 100%;
+          background-color: $color-dark;
+        }
 
         &:hover {
             color: $color-dark;
