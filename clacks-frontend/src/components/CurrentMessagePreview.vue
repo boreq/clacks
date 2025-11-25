@@ -1,28 +1,28 @@
 <template>
   <div class="current-message-preview">
     <ul class="before">
-      <li v-for="part in message.before" :key="part.text">
-        {{ part.text }}
+      <li v-for="part in message?.before" :key="part.kind + part.character">
+        <MessagePartPreview :message_part="part"></MessagePartPreview>
       </li>
     </ul>
 
     <div class="arrow">
-      <ArrowLeft v-if="message.before.length" />
+      <ArrowLeft v-if="message?.before.length" />
     </div>
 
     <div class="current">
-      <span v-if="message.current">
-        {{ message.current.text }}
+      <span v-if="message?.current">
+        <MessagePartPreview :message_part="message?.current"></MessagePartPreview>
       </span>
     </div>
 
     <div class="arrow">
-      <ArrowLeft v-if="message.after.length" />
+      <ArrowLeft v-if="message?.after.length" />
     </div>
 
     <ul class="after">
-      <li v-for="part in message.after" :key="part.text">
-        {{ part.text }}
+      <li v-for="part in message?.after" :key="part.kind + part.character">
+        <MessagePartPreview :message_part="part"></MessagePartPreview>
       </li>
     </ul>
   </div>
@@ -32,10 +32,12 @@
 import { defineComponent, PropType } from 'vue';
 import { ArrowLeft } from 'lucide-vue-next';
 import { CurrentMessage } from '@/types';
+import MessagePartPreview from '@/components/MessagePartPreview.vue';
 
 export default defineComponent({
   name: 'CurrentMessagePreview',
   components: {
+    MessagePartPreview,
     ArrowLeft,
   },
   props: {

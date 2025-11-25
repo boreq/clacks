@@ -9,7 +9,7 @@ import { ShutterPosition } from '@/types';
 export default defineComponent({
   name: 'ShutterPreview',
   props: {
-    shutterPosition: Object as PropType<ShutterPosition>,
+    shutterPosition: String as PropType<ShutterPosition>,
   },
   computed: {
     open(): boolean {

@@ -270,36 +270,23 @@ impl From<&EncodedMessage> for TransportEncodedMessage {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TransportEncodedMessagePart {
-    element: TransportMessageComponent,
-    shutter_positions: TransportShutterPositions,
+    kind: String,
+    character: Option<String>,
+    open_shutters: TransportShutterPositions,
 }
 
 impl From<&EncodedMessagePart> for TransportEncodedMessagePart {
     fn from(value: &EncodedMessagePart) -> Self {
-        Self {
-            element: value.element().into(),
-            shutter_positions: value.shutter_positions().into(),
-        }
-    }
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TransportMessageComponent {
-    kind: String,
-    character: Option<String>,
-}
-
-impl From<&MessageComponent> for TransportMessageComponent {
-    fn from(value: &MessageComponent) -> Self {
-        match value {
+        match value.element() {
             MessageComponent::Character(ch) => Self {
                 kind: "CHARACTER".into(),
                 character: Some(ch.to_string()),
+                open_shutters: value.shutter_positions().into(),
             },
             MessageComponent::End => Self {
                 kind: "END".to_string(),
                 character: None,
+                open_shutters: value.shutter_positions().into(),
             },
         }
     }
@@ -307,15 +294,11 @@ impl From<&MessageComponent> for TransportMessageComponent {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct TransportShutterPositions {
-    open_shutters: Vec<String>,
-}
+struct TransportShutterPositions(Vec<String>);
 
 impl From<&ShutterPositions> for TransportShutterPositions {
     fn from(value: &ShutterPositions) -> Self {
-        Self {
-            open_shutters: value.open_shutters().map(|v| v.into()).collect(),
-        }
+        Self(value.open_shutters().map(|v| v.into()).collect())
     }
 }
 

@@ -1,9 +1,3 @@
-export interface ShutterPositions {
-  shutters: {
-    [key in ShutterLocation]: ShutterPosition;
-  };
-}
-
 export enum ShutterLocation {
     TopLeft = 'TOP_LEFT',
     TopRight = 'TOP_RIGHT',
@@ -20,7 +14,7 @@ export enum ShutterPosition {
 
 export interface CurrentMessage {
     before: MessagePart[];
-    current: MessagePart | null | undefined;
+    current?: MessagePart;
     after: MessagePart[];
 }
 
@@ -29,6 +23,12 @@ export interface Message {
 }
 
 export interface MessagePart {
-    text: string,
-    encoding: ShutterPositions,
+    kind: MessagePartKind
+    character?: string,
+    openShutters: ShutterLocation[],
+}
+
+export enum MessagePartKind {
+    Character = 'CHARACTER',
+    End = 'END',
 }

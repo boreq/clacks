@@ -1,4 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
+import { CurrentMessage, Message } from '@/types';
 
 export class API {
   getConfig(): Promise<AxiosResponse<ConfigResponse>> {
@@ -7,6 +8,10 @@ export class API {
 
   addMessageToQueue(request: AddMessageToQueueRequest): Promise<AxiosResponse<void>> {
     return axios.post<void>(`${process.env.VUE_APP_BACKEND_URL}/api/queue`, request);
+  }
+
+  stateUpdatesWS(): WebSocket {
+    return new WebSocket(`${process.env.VUE_APP_BACKEND_URL}/api/state-updates`);
   }
 }
 
@@ -17,4 +22,9 @@ export interface ConfigResponse {
 
 export interface AddMessageToQueueRequest {
     message: string;
+}
+
+export interface StateUpdate {
+    currentMessage?: CurrentMessage;
+    queue: Message[];
 }

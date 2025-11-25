@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { ShutterPositions, ShutterPosition, ShutterLocation } from '@/types';
+import { ShutterLocation, ShutterPosition } from '@/types';
 import ShutterPreview from '@/components/ShutterPreview.vue';
 
 export default defineComponent({
@@ -28,26 +28,34 @@ export default defineComponent({
     ShutterPreview,
   },
   props: {
-    shutterPositions: Object as PropType<ShutterPositions>,
+    openShutters: [] as PropType<ShutterLocation[]>,
+  },
+  methods: {
+    getShutterPosition(location: ShutterLocation): ShutterPosition {
+      if (this.openShutters?.includes(location)) {
+        return ShutterPosition.Open;
+      }
+      return ShutterPosition.Closed;
+    },
   },
   computed: {
     topLeftPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.TopLeft];
+      return this.getShutterPosition(ShutterLocation.TopLeft);
     },
     topRightPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.TopRight];
+      return this.getShutterPosition(ShutterLocation.TopRight);
     },
     middleLeftPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.MiddleLeft];
+      return this.getShutterPosition(ShutterLocation.MiddleLeft);
     },
     middleRightPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.MiddleRight];
+      return this.getShutterPosition(ShutterLocation.MiddleRight);
     },
     bottomLeftPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.BottomLeft];
+      return this.getShutterPosition(ShutterLocation.BottomLeft);
     },
     bottomRightPosition(): ShutterPosition {
-      return this.shutterPositions!.shutters[ShutterLocation.BottomRight];
+      return this.getShutterPosition(ShutterLocation.BottomRight);
     },
   },
 });

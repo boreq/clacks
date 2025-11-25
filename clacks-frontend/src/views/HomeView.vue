@@ -4,25 +4,30 @@
       https://onlyclacks.com
     </h1>
 
-    <ShuttersPreview :shutterPositions="shutterPositions" class="current-shutters" />
-    <CurrentMessagePreview :message="message" />
+    <ShuttersPreview
+      :openShutters="update?.currentMessage?.current?.openShutters"
+      class="current-shutters" />
+    <CurrentMessagePreview :message="update?.currentMessage" />
 
     <div class="queue-separator">
       <ChevronUp v-for="_ in 9" :key="_" />
     </div>
 
-    <div v-if="!queue || queue.length === 0" class="message">
+    <div v-if="update?.queue.length === 0" class="message">
       The queue is empty.
     </div>
 
     <ul class="queue">
-      <li v-for="(message, index) in queue" :key="message.parts.map(v => v.text).join('-')">
+      <li
+        v-for="(message, index) in update?.queue"
+        :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')">
         <ul class="message">
           <li class="index">
             {{ index + 1 }}.
           </li>
-          <li v-for="part in message.parts" :key="part.text">
-            {{ part.text }}
+          <li v-for="part in message.parts" :key="part.kind + part.character">
+            <span v-if="part.kind === 'CHARACTER'">{{ part.character }}</span>
+            <span v-if="part.kind === 'END'">END</span>
           </li>
         </ul>
       </li>
@@ -55,10 +60,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { ChevronUp } from 'lucide-vue-next';
-import {
-  ShutterPositions, ShutterLocation, ShutterPosition, CurrentMessage, Message,
-} from '@/types';
-import { API, ConfigResponse } from '@/api';
+import { API, ConfigResponse, StateUpdate } from '@/api';
 
 import ShuttersPreview from '@/components/ShuttersPreview.vue';
 import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue';
@@ -71,6 +73,12 @@ enum NewMessageFormState {
     Submitting,
 }
 
+enum VisualisationState {
+  Loading,
+  Ready,
+  Error,
+}
+
 export default defineComponent({
   name: 'HomeView',
   components: {
@@ -78,6 +86,18 @@ export default defineComponent({
     CurrentMessagePreview,
     ChevronUp,
     LoadingIndicator,
+  },
+  data() {
+    return {
+      api: new API(),
+
+      update: null as StateUpdate | null,
+      visualisationState: VisualisationState.Loading,
+
+      config: null as ConfigResponse | null,
+      newMessageFormState: NewMessageFormState.LoadingConfig,
+      newMessageText: '',
+    };
   },
   created(): void {
     this.api.getConfig()
@@ -88,46 +108,17 @@ export default defineComponent({
       .catch(() => {
         this.newMessageFormState = NewMessageFormState.LoadingConfigError;
       });
-  },
-  data() {
-    const shutterPositions: ShutterPositions = {
-      shutters: {
-        [ShutterLocation.TopLeft]: ShutterPosition.Open,
-        [ShutterLocation.TopRight]: ShutterPosition.Open,
-        [ShutterLocation.MiddleLeft]: ShutterPosition.Closed,
-        [ShutterLocation.MiddleRight]: ShutterPosition.Open,
-        [ShutterLocation.BottomLeft]: ShutterPosition.Closed,
-        [ShutterLocation.BottomRight]: ShutterPosition.Open,
-      },
-    };
 
-    const after = [...'GNUTERRYPRATCHETT'].map((c) => ({ text: c, encoding: shutterPositions }));
+    const socket = this.api.stateUpdatesWS();
 
-    const message: CurrentMessage = {
-      before: [],
-      current: undefined,
-      after,
-    };
+    socket.addEventListener('open', () => {
+      console.log('open');
+    });
 
-    const queue: Message[] = [
-      {
-        parts: [...'GNUTERRYPRATCHETT'].map((c) => ({ text: c, encoding: shutterPositions })),
-      },
-      {
-        parts: [...'FREESIDE'].map((c) => ({ text: c, encoding: shutterPositions })),
-      },
-    ];
-
-    return {
-      shutterPositions,
-      message,
-      queue,
-      api: new API(),
-      config: null as ConfigResponse | null,
-
-      newMessageFormState: NewMessageFormState.LoadingConfig,
-      newMessageText: '',
-    };
+    socket.addEventListener('message', (event) => {
+      this.visualisationState = VisualisationState.Ready;
+      this.update = JSON.parse(event.data);
+    });
   },
   watch: {
     newMessageText(newValue: string, oldValue: string): void {
