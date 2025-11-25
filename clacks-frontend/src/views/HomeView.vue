@@ -19,7 +19,7 @@
       </div>
 
       <div class="error" v-if="visualisationError">
-        Error loading the visualisation?!
+        Error loading the visualisation?! Attempting to reestablish connection.
         Try refreshing or something, I don't know, I'm just an error message.
       </div>
 
@@ -65,7 +65,7 @@
     </div>
     <div class="message-form" v-if="messageFormLoadingError">
       <div class="error">
-        Error loading config?!
+        Error loading config?! Attempting to reestablish connection.
         Try refreshing or something, I don't know, I'm just an error message.
       </div>
     </div>
@@ -125,37 +125,23 @@ export default defineComponent({
       api: new API(),
 
       update: null as StateUpdate | null,
-      visualisationState: VisualisationState.Loading,
+      visualisationState: null as VisualisationState | null,
 
       config: null as ConfigResponse | null,
-      newMessageFormState: NewMessageFormState.LoadingConfig,
+      newMessageFormState: null as NewMessageFormState | null,
       newMessageText: '',
+
+      intervalID: null as number | null,
     };
   },
   created(): void {
-    this.api.getConfig()
-      .then((response) => {
-        this.config = response.data;
-        this.newMessageFormState = NewMessageFormState.Ready;
-      })
-      .catch(() => {
-        this.newMessageFormState = NewMessageFormState.LoadingConfigError;
-      });
-
-    const socket = this.api.stateUpdatesWS();
-
-    socket.addEventListener('message', (event) => {
-      this.visualisationState = VisualisationState.Ready;
-      this.update = JSON.parse(event.data);
-    });
-
-    socket.addEventListener('error', () => {
-      this.visualisationState = VisualisationState.Error;
-    });
-
-    socket.addEventListener('close', () => {
-      this.visualisationState = VisualisationState.Error;
-    });
+    this.tryLoad();
+    this.intervalID = window.setInterval(this.tryLoad, 1000);
+  },
+  unmounted(): void {
+    if (this.intervalID) {
+      window.clearInterval(this.intervalID);
+    }
   },
   watch: {
     newMessageText(newValue: string, oldValue: string): void {
@@ -172,6 +158,38 @@ export default defineComponent({
     },
   },
   methods: {
+    tryLoad(): void {
+      if (this.newMessageFormState === null
+        || this.newMessageFormState === NewMessageFormState.LoadingConfigError) {
+        this.newMessageFormState = NewMessageFormState.LoadingConfig;
+        this.api.getConfig()
+          .then((response) => {
+            this.config = response.data;
+            this.newMessageFormState = NewMessageFormState.Ready;
+          })
+          .catch(() => {
+            this.newMessageFormState = NewMessageFormState.LoadingConfigError;
+          });
+      }
+
+      if (this.visualisationState === null
+          || this.visualisationState === VisualisationState.Error) {
+        const socket = this.api.stateUpdatesWS();
+
+        socket.addEventListener('message', (event) => {
+          this.visualisationState = VisualisationState.Ready;
+          this.update = JSON.parse(event.data);
+        });
+
+        socket.addEventListener('error', () => {
+          this.visualisationState = VisualisationState.Error;
+        });
+
+        socket.addEventListener('close', () => {
+          this.visualisationState = VisualisationState.Error;
+        });
+      }
+    },
     submitMessageForm(): void {
       if (this.newMessageFormState !== NewMessageFormState.Ready) {
         return;
