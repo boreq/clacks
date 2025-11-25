@@ -1,6 +1,5 @@
 <template>
-    <td :class="{'shutter-preview': true, 'open': open, 'closed': closed }">
-  </td>
+  <td :class="{ 'shutter-preview': true, open, closed }" />
 </template>
 
 <script lang="ts">
@@ -14,10 +13,10 @@ export default defineComponent({
   },
   computed: {
     open(): boolean {
-        return this.shutterPosition == ShutterPosition.Open;
+      return this.shutterPosition === ShutterPosition.Open;
     },
     closed(): boolean {
-        return this.shutterPosition == ShutterPosition.Closed;
+      return this.shutterPosition === ShutterPosition.Closed;
     },
   },
 });

@@ -1,154 +1,172 @@
 <template>
   <div class="home">
-      <h1>
-          https://onlyclacks.com
-      </h1>
+    <h1>
+      https://onlyclacks.com
+    </h1>
 
-      <ShuttersPreview :shutterPositions="shutterPositions" class="current-shutters"></ShuttersPreview>
-      <CurrentMessagePreview :message="message"></CurrentMessagePreview>
+    <ShuttersPreview :shutterPositions="shutterPositions" class="current-shutters" />
+    <CurrentMessagePreview :message="message" />
 
-      <div class="queue-separator">
-          <ChevronUp v-for="_ in 9" :key="_"></ChevronUp>
-      </div>
+    <div class="queue-separator">
+      <ChevronUp v-for="_ in 9" :key="_" />
+    </div>
 
-      <div v-if="!queue || queue.length === 0" class="message">
-          The queue is empty.
-      </div>
+    <div v-if="!queue || queue.length === 0" class="message">
+      The queue is empty.
+    </div>
 
-      <ul class="queue">
-          <li v-for="(message, index) in queue" :key="message.parts.map(v => v.text).join('-')">
-              <ul class="message">
-                  <li class="index">
-                      {{ index + 1 }}.
-                  </li>
-                  <li v-for="part in message.parts" :key="part.text">
-                      {{ part.text }}
-                  </li>
-              </ul>
+    <ul class="queue">
+      <li v-for="(message, index) in queue" :key="message.parts.map(v => v.text).join('-')">
+        <ul class="message">
+          <li class="index">
+            {{ index + 1 }}.
           </li>
-      </ul>
+          <li v-for="part in message.parts" :key="part.text">
+            {{ part.text }}
+          </li>
+        </ul>
+      </li>
+    </ul>
 
-      <div class="message-form">
-          <input type="text" placeholder="ABC..." v-model="newMessageText">
-          <button>
-              <ChevronUp></ChevronUp>
-              <span class="text">ADD TO QUEUE</span>
-              <ChevronUp></ChevronUp>
-          </button>
+    <div class="message-form" v-if="messageFormLoading">
+      <div class="loading-indicator">
+          <LoadingIndicator></LoadingIndicator>
       </div>
+    </div>
+    <div class="message-form" v-if="messageFormLoadingError">
+      <div class="error">
+        Error loading config?! Try refreshing or something, I don't know, I'm just an error message.
+      </div>
+    </div>
+    <div class="message-form" v-if="!messageFormLoading && !messageFormLoadingError">
+      <input type="text"
+        placeholder="ABC..."
+        v-model="newMessageText"
+        @keydown.enter="submitMessageForm">
+      <button @click="submitMessageForm">
+        <ChevronUp />
+        <span class="text">ADD TO QUEUE</span>
+        <ChevronUp />
+      </button>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { ShutterPositions, ShutterLocation, ShutterPosition, CurrentMessage, Message } from '@/types';
 import { ChevronUp } from 'lucide-vue-next';
-import ShuttersPreview from '@/components/ShuttersPreview.vue'; 
+import {
+  ShutterPositions, ShutterLocation, ShutterPosition, CurrentMessage, Message,
+} from '@/types';
+import { API, ConfigResponse } from '@/api';
+
+import ShuttersPreview from '@/components/ShuttersPreview.vue';
 import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue';
-import { API, ConfigResponse } from "@/api";
+import LoadingIndicator from '@/components/LoadingIndicator.vue';
+
+enum NewMessageFormState {
+    LoadingConfig,
+    LoadingConfigError,
+    Ready,
+    Submitting,
+}
 
 export default defineComponent({
   name: 'HomeView',
   components: {
-      ShuttersPreview,
-      CurrentMessagePreview,
-      ChevronUp,
+    ShuttersPreview,
+    CurrentMessagePreview,
+    ChevronUp,
+    LoadingIndicator,
   },
-  created(): any {
+  created(): void {
     this.api.getConfig()
-        .then(response => {
-          this.config = response.data;
-        })
-  },
-  mounted(): void {
-    window.setInterval(this.updateData, 2000);
+      .then((response) => {
+        this.config = response.data;
+        this.newMessageFormState = NewMessageFormState.Ready;
+      })
+      .catch(() => {
+        this.newMessageFormState = NewMessageFormState.LoadingConfigError;
+      });
   },
   data() {
-    let shutterPositions: ShutterPositions = {
-        shutters: {
-            [ShutterLocation.TopLeft]: ShutterPosition.Open,
-            [ShutterLocation.TopRight]: ShutterPosition.Open,
-            [ShutterLocation.MiddleLeft]: ShutterPosition.Closed,
-            [ShutterLocation.MiddleRight]: ShutterPosition.Open,
-            [ShutterLocation.BottomLeft]: ShutterPosition.Closed,
-            [ShutterLocation.BottomRight]: ShutterPosition.Open,
-        }
+    const shutterPositions: ShutterPositions = {
+      shutters: {
+        [ShutterLocation.TopLeft]: ShutterPosition.Open,
+        [ShutterLocation.TopRight]: ShutterPosition.Open,
+        [ShutterLocation.MiddleLeft]: ShutterPosition.Closed,
+        [ShutterLocation.MiddleRight]: ShutterPosition.Open,
+        [ShutterLocation.BottomLeft]: ShutterPosition.Closed,
+        [ShutterLocation.BottomRight]: ShutterPosition.Open,
+      },
     };
 
+    const after = [...'GNUTERRYPRATCHETT'].map((c) => ({ text: c, encoding: shutterPositions }));
 
-    let after = [..."GNUTERRYPRATCHETT"].map(c => {
-        return {text: c, encoding: shutterPositions};
-    });
+    const message: CurrentMessage = {
+      before: [],
+      current: undefined,
+      after,
+    };
 
-    let message: CurrentMessage = {
-        before: [],
-        current: undefined,
-        after: after,
-    }
-
-    let queue: Message[] = [
-        {
-            parts: [..."GNUTERRYPRATCHETT"].map(c => {
-                return {text: c, encoding: shutterPositions};
-            }),
-        },
-        {
-            parts: [..."FREESIDE"].map(c => {
-                return {text: c, encoding: shutterPositions};
-            }),
-        },
+    const queue: Message[] = [
+      {
+        parts: [...'GNUTERRYPRATCHETT'].map((c) => ({ text: c, encoding: shutterPositions })),
+      },
+      {
+        parts: [...'FREESIDE'].map((c) => ({ text: c, encoding: shutterPositions })),
+      },
     ];
 
     return {
-        shutterPositions,
-        message,
-        queue,
-        api: new API(),
-        config: null as ConfigResponse | null,
-        newMessageText: '',
+      shutterPositions,
+      message,
+      queue,
+      api: new API(),
+      config: null as ConfigResponse | null,
+
+      newMessageFormState: NewMessageFormState.LoadingConfig,
+      newMessageText: '',
     };
   },
   watch: {
-    newMessageText(newValue): void {
-      this.newMessageText = this.newMessageText
-          .toUpperCase()
-          .split('')
-          .filter((char, index) => this.config?.supportedCharacters.includes(char) && index < this.config?.maxMessageLenInBytes)
-          .join('');
+    newMessageText(newValue: string, oldValue: string): void {
+      const correctedNewValue = newValue
+        .toUpperCase()
+        .split('')
+        .filter((char) => this.config!.supportedCharacters.includes(char))
+        .join('');
+      if (correctedNewValue.length < this.config!.maxMessageLenInBytes) {
+        this.newMessageText = correctedNewValue;
+      } else {
+        this.newMessageText = oldValue;
+      }
     },
   },
   methods: {
-    updateData() {
-        let shutterPositions: ShutterPositions = {
-            shutters: {
-                [ShutterLocation.TopLeft]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-                [ShutterLocation.TopRight]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-                [ShutterLocation.MiddleLeft]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-                [ShutterLocation.MiddleRight]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-                [ShutterLocation.BottomLeft]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-                [ShutterLocation.BottomRight]: Math.random() < 0.5 ? ShutterPosition.Open : ShutterPosition.Closed,
-            }
-        };
+    submitMessageForm(): void {
+      if (this.newMessageFormState !== NewMessageFormState.Ready) {
+        return;
+      }
 
-        this.shutterPositions = shutterPositions;
+      if (this.newMessageText.length === 0) {
+        return;
+      }
 
-        if (this.message.current) {
-            this.message.before.push(this.message.current);
-            this.message.current = undefined;
-            return;
-        }
-
-        if (!this.message.current && this.message.after.length > 0) {
-            this.message.current = this.message.after.shift();
-            return;
-        }
-
-        if (!this.message.current && this.message.after.length == 0) {
-            this.message.after = this.message.before;
-            this.message.before = [];
-        }
+      console.log('submit');
     },
-  }
+  },
+  computed: {
+    messageFormLoading(): boolean {
+      return this.newMessageFormState === NewMessageFormState.LoadingConfig;
+    },
+    messageFormLoadingError(): boolean {
+      return this.newMessageFormState === NewMessageFormState.LoadingConfigError;
+    },
+    messageFormSubmitting(): boolean {
+      return this.newMessageFormState === NewMessageFormState.Submitting;
+    },
+  },
 });
 </script>
 
@@ -190,12 +208,24 @@ h1 {
     left: 0;
     bottom: 0;
     padding: 1em;
-    display: flex; 
+    display: flex;
     align-items: stretch;
+    background-color: $color-dark;
+
+    .loading-indicator {
+        flex: 1;
+        text-align: center;
+        height: 100px;
+    }
+
+    .error {
+        text-align: center;
+        flex: 1;
+    }
 
     input, button {
         display: block;
-        margin: 0; 
+        margin: 0;
         display: 0;
         border: 1px solid $color-primary;
         background-color: transparent;

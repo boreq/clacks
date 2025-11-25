@@ -1,19 +1,19 @@
 <template>
   <table class="shutters-preview">
-      <tbody>
-          <tr>
-              <ShutterPreview :shutterPosition="topLeftPosition"></ShutterPreview>
-              <ShutterPreview :shutterPosition="topRightPosition"></ShutterPreview>
-          </tr>
-          <tr>
-              <ShutterPreview :shutterPosition="middleLeftPosition"></ShutterPreview>
-              <ShutterPreview :shutterPosition="middleRightPosition"></ShutterPreview>
-          </tr>
-          <tr>
-              <ShutterPreview :shutterPosition="bottomLeftPosition"></ShutterPreview>
-              <ShutterPreview :shutterPosition="bottomRightPosition"></ShutterPreview>
-          </tr>
-      </tbody>
+    <tbody>
+      <tr>
+        <ShutterPreview :shutterPosition="topLeftPosition" />
+        <ShutterPreview :shutterPosition="topRightPosition" />
+      </tr>
+      <tr>
+        <ShutterPreview :shutterPosition="middleLeftPosition" />
+        <ShutterPreview :shutterPosition="middleRightPosition" />
+      </tr>
+      <tr>
+        <ShutterPreview :shutterPosition="bottomLeftPosition" />
+        <ShutterPreview :shutterPosition="bottomRightPosition" />
+      </tr>
+    </tbody>
   </table>
 </template>
 
@@ -25,29 +25,29 @@ import ShutterPreview from '@/components/ShutterPreview.vue';
 export default defineComponent({
   name: 'ShuttersPreview',
   components: {
-      ShutterPreview,
+    ShutterPreview,
   },
   props: {
     shutterPositions: Object as PropType<ShutterPositions>,
   },
   computed: {
     topLeftPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.TopLeft];
+      return this.shutterPositions!.shutters[ShutterLocation.TopLeft];
     },
     topRightPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.TopRight];
+      return this.shutterPositions!.shutters[ShutterLocation.TopRight];
     },
     middleLeftPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.MiddleLeft];
+      return this.shutterPositions!.shutters[ShutterLocation.MiddleLeft];
     },
     middleRightPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.MiddleRight];
+      return this.shutterPositions!.shutters[ShutterLocation.MiddleRight];
     },
     bottomLeftPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.BottomLeft];
+      return this.shutterPositions!.shutters[ShutterLocation.BottomLeft];
     },
     bottomRightPosition(): ShutterPosition {
-        return this.shutterPositions!.shutters[ShutterLocation.BottomRight];
+      return this.shutterPositions!.shutters[ShutterLocation.BottomRight];
     },
   },
 });
