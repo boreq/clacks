@@ -1,5 +1,5 @@
 <template>
-  <div class="current-message-preview">
+  <div class="current-message-preview" :class="{'changing-character': !message?.current}">
     <ul class="before">
       <li v-for="part in message?.before" :key="part.kind + part.character">
         <MessagePartPreview :message_part="part"></MessagePartPreview>
@@ -100,5 +100,24 @@ export default defineComponent({
         width: 300px;
         height: 300px;
     }
+
+  &.changing-character {
+    .arrow {
+      color: $color-primary;
+      animation: blink-animation .5s steps(1) infinite;
+    }
+  }
+}
+
+@keyframes blink-animation {
+  0% {
+    visibility: visible;
+  }
+  50% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
+  }
 }
 </style>
