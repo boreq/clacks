@@ -7,14 +7,21 @@
         <Space></Space>
     </div>
     <div v-if="message_part?.kind == 'END'" class="end">
-      <div>
-        E
+      <div class="line">
+        <div>
+          S
+        </div>
+        <div>
+          T
+        </div>
       </div>
-      <div>
-        N
-      </div>
-      <div>
-        D
+      <div class="line">
+        <div>
+          O
+        </div>
+        <div>
+          P
+        </div>
       </div>
     </div>
   </div>
@@ -54,15 +61,14 @@ export default defineComponent({
       display: flex;
       flex-flow: column nowrap;
       align-items: center;
-      font-size: .35em;
+      font-size: .5em;
       line-height: 1;
 
-      :nth-child(1) {
-        transform: translateX(-1em);
-      }
-
-      :nth-child(3) {
-        transform: translateX(1em);
+      .line {
+        display: flex;
+        flex-flow: row nowrap;
+        align-items: center;
+        justify-content: center;
       }
     }
   }
