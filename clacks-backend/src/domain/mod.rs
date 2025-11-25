@@ -321,7 +321,7 @@ impl Default for Encoding {
             .unwrap(),
         );
         characters.insert(
-            "O".into(),
+            "P".into(),
             ShutterPositions::new(&[
                 ShutterLocation::TopLeft,
                 ShutterLocation::TopRight,
