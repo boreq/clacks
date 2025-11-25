@@ -7,8 +7,11 @@ use crate::domain::{
 use crate::errors::{Error, Result};
 use crate::{adapters, app, config};
 use app::AddMessageToQueueHandler;
+use axum::body::Body;
 use axum::extract::ws::WebSocket;
 use axum::extract::{WebSocketUpgrade, ws};
+use axum::handler::Handler;
+use axum::http::Request;
 use axum::routing::any;
 use axum::{
     Router,
@@ -20,10 +23,8 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use axum::body::Body;
-use axum::handler::Handler;
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use http::Request;
+use http::Method;
 use log::debug;
 use prometheus::TextEncoder;
 use serde::{Deserialize, Serialize};
@@ -57,24 +58,32 @@ impl Server {
         let trace = TraceLayer::new_for_http();
         let cors = match config.environment() {
             Environment::Production => CorsLayer::new(),
-            Environment::Development => CorsLayer::new().allow_origin(Any),
+            Environment::Development => CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
         };
 
         let compression = CompressionLayer::new();
 
         let app = Router::new()
-            .with_state(deps)
+            .route("/metrics", get(handle_get_metrics::<D>))
+            .route("/api/queue", post(handle_post_queue::<D>))
+            .route("/api/state-updates", any(handle_state_updates::<D>))
+            .route("/api/config", get(handle_get_config::<D>))
             .layer(
                 ServiceBuilder::new()
                     .layer(trace.clone())
                     .layer(compression.clone())
                     .layer(cors.clone()),
             )
-            .route("/metrics", get(handle_get_metrics::<D>))
-            .route("/api/queue", post(handle_post_queue::<D>))
-            .route("/api/state-updates", any(handle_state_updates::<D>))
-            .route("/api/config", get(handle_get_config::<D>))
-            .fallback(serve_frontend.layer(trace.clone()).layer(compression.clone()).layer(cors.clone()));
+            .with_state(deps)
+            .fallback(
+                serve_frontend
+                    .layer(trace.clone())
+                    .layer(compression.clone())
+                    .layer(cors.clone()),
+            );
 
         let listener = tokio::net::TcpListener::bind(config.address()).await?;
         axum::serve(listener, app).await?;
@@ -82,7 +91,7 @@ impl Server {
     }
 }
 
-async fn serve_frontend(request: Request<Body>) -> std::result::Result<Response<Body>, AppError> {
+async fn serve_frontend(_request: Request<Body>) -> std::result::Result<Response<Body>, AppError> {
     Err(AppError::UnknownError)
 }
 
