@@ -9,7 +9,9 @@
       class="current-shutters" />
     <CurrentMessagePreview :message="update?.currentMessage" />
 
-    <div class="queue-separator">
+    <div
+      class="queue-separator"
+      :class="{'changing-message': changingMessage}">
       <ChevronUp v-for="_ in 9" :key="_" />
     </div>
 
@@ -178,6 +180,9 @@ export default defineComponent({
     messageFormSubmitting(): boolean {
       return this.newMessageFormState === NewMessageFormState.Submitting;
     },
+    changingMessage(): boolean {
+      return !this.update?.currentMessage && !!this.update?.queue && this.update?.queue.length > 0;
+    },
   },
 });
 </script>
@@ -210,6 +215,10 @@ h1 {
 
     >* {
         flex: 1;
+    }
+
+    &.changing-message {
+        animation: changing-message-blink-animation .5s steps(1) infinite;
     }
 }
 
@@ -315,7 +324,7 @@ h1 {
   display: flex;
   flex-flow: column nowrap;
   align-items: center;
-  animation: blink-animation 1s steps(5, start) infinite;
+  animation: call-to-action-blink-animation 1s steps(5, start) infinite;
 
   .arrow {
     display: block;
@@ -324,9 +333,21 @@ h1 {
   }
 }
 
-@keyframes blink-animation {
+@keyframes call-to-action-blink-animation {
   to {
     visibility: hidden;
+  }
+}
+
+@keyframes changing-message-blink-animation {
+  0% {
+    color: $color-dark;
+  }
+  50% {
+    color: $color-primary;
+  }
+  100% {
+    color: $color-dark;
   }
 }
 </style>
