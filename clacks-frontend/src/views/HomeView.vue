@@ -13,8 +13,11 @@
       <ChevronUp v-for="_ in 9" :key="_" />
     </div>
 
-    <div v-if="update?.queue.length === 0" class="message">
-      The queue is empty.
+    <div v-if="update?.queue.length === 0" class="queue-call-to-action">
+      <div>
+        Try adding something to the queue!
+      </div>
+      <ArrowDown class="arrow"></ArrowDown>
     </div>
 
     <ul class="queue">
@@ -59,7 +62,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { ChevronUp } from 'lucide-vue-next';
+import { ChevronUp, ArrowDown } from 'lucide-vue-next';
 import { API, ConfigResponse, StateUpdate } from '@/api';
 
 import ShuttersPreview from '@/components/ShuttersPreview.vue';
@@ -85,9 +88,11 @@ export default defineComponent({
   components: {
     ShuttersPreview,
     CurrentMessagePreview,
-    ChevronUp,
     LoadingIndicator,
     MessagePartPreview,
+
+    ChevronUp,
+    ArrowDown,
   },
   data() {
     return {
@@ -201,7 +206,6 @@ h1 {
 .queue-separator {
     display: flex;
     flex-flow: row nowrap;
-    color: $color-primary;
     margin: 5em 0;
 
     >* {
@@ -305,8 +309,24 @@ h1 {
 
 }
 
-.message {
-    padding: 2em 0;
-    text-transform: uppercase;
+.queue-call-to-action {
+  font-size: 4em;
+  text-transform: uppercase;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  animation: blink-animation 1s steps(5, start) infinite;
+
+  .arrow {
+    display: block;
+    width: 2em;
+    height: 2em;
+  }
+}
+
+@keyframes blink-animation {
+  to {
+    visibility: hidden;
+  }
 }
 </style>
