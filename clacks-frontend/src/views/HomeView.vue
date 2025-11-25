@@ -153,6 +153,20 @@ export default defineComponent({
         return;
       }
 
+      this.newMessageFormState = NewMessageFormState.Submitting;
+
+      this.api.addMessageToQueue({
+        message: this.newMessageText,
+      }).then((response) => {
+        if (response.status !== 200) {
+          alert('error');
+          return;
+        }
+        this.newMessageText = '';
+      }).catch(() => {
+        alert('something went wrong');
+      });
+
       console.log('submit');
     },
   },

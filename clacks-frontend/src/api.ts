@@ -6,7 +6,7 @@ export class API {
   }
 
   addMessageToQueue(request: AddMessageToQueueRequest): Promise<AxiosResponse<void>> {
-    return axios.post<void>(`${process.env.VUE_APP_BACKEND_URL}/api/quueue`, request);
+    return axios.post<void>(`${process.env.VUE_APP_BACKEND_URL}/api/queue`, request);
   }
 }
 

@@ -20,7 +20,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use axum::body::Body;
+use axum::handler::Handler;
 use futures_util::{sink::SinkExt, stream::StreamExt};
+use http::Request;
 use log::debug;
 use prometheus::TextEncoder;
 use serde::{Deserialize, Serialize};
@@ -60,22 +63,27 @@ impl Server {
         let compression = CompressionLayer::new();
 
         let app = Router::new()
-            .route("/metrics", get(handle_get_metrics::<D>))
-            .route("/api/queue", post(handle_post_queue::<D>))
-            .route("/api/state-updates", any(handle_state_updates::<D>))
-            .route("/api/config", get(handle_get_config::<D>))
             .with_state(deps)
             .layer(
                 ServiceBuilder::new()
                     .layer(trace.clone())
                     .layer(compression.clone())
                     .layer(cors.clone()),
-            );
+            )
+            .route("/metrics", get(handle_get_metrics::<D>))
+            .route("/api/queue", post(handle_post_queue::<D>))
+            .route("/api/state-updates", any(handle_state_updates::<D>))
+            .route("/api/config", get(handle_get_config::<D>))
+            .fallback(serve_frontend.layer(trace.clone()).layer(compression.clone()).layer(cors.clone()));
 
         let listener = tokio::net::TcpListener::bind(config.address()).await?;
         axum::serve(listener, app).await?;
         Ok(())
     }
+}
+
+async fn serve_frontend(request: Request<Body>) -> std::result::Result<Response<Body>, AppError> {
+    Err(AppError::UnknownError)
 }
 
 async fn handle_get_metrics<D>(State(deps): State<D>) -> std::result::Result<String, AppError>
