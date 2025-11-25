@@ -48,12 +48,12 @@
     </div>
     <div class="message-form" v-if="!messageFormLoading && !messageFormLoadingError">
       <input type="text"
-        placeholder="ABC..."
+        placeholder="YOU C-MAIL MESSAGE HERE..."
         v-model="newMessageText"
         @keydown.enter="submitMessageForm">
       <button @click="submitMessageForm">
         <ChevronUp />
-        <span class="text">ADD TO QUEUE</span>
+        <span class="text">SEND</span>
         <ChevronUp />
       </button>
     </div>
