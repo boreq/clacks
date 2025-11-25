@@ -24,7 +24,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use http::Method;
 use log::debug;
 use prometheus::TextEncoder;
 use serde::{Deserialize, Serialize};

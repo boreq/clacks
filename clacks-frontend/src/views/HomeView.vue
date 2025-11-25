@@ -163,11 +163,11 @@ export default defineComponent({
           return;
         }
         this.newMessageText = '';
+        this.newMessageFormState = NewMessageFormState.Ready;
       }).catch(() => {
         alert('something went wrong');
+        this.newMessageFormState = NewMessageFormState.Ready;
       });
-
-      console.log('submit');
     },
   },
   computed: {
