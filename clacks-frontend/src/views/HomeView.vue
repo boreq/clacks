@@ -4,39 +4,50 @@
       https://onlyclacks.com
     </h1>
 
-    <ShuttersPreview
-      :openShutters="update?.currentMessage?.current?.openShutters"
-      class="current-shutters" />
-    <CurrentMessagePreview :message="update?.currentMessage" />
-
-    <div
-      class="queue-separator"
-      :class="{'changing-message': changingMessage}">
-      <ChevronUp v-for="_ in 9" :key="_" />
-    </div>
-
-    <div v-if="update?.queue.length === 0" class="queue-call-to-action">
-      <div>
-        Try adding something to the queue!
+    <div class="visualisation">
+      <div class="loading-indicator" v-if="visualisationLoading">
+        <LoadingIndicator></LoadingIndicator>
       </div>
-      <ArrowDown class="arrow"></ArrowDown>
-    </div>
 
-    <ul class="queue">
-      <li
-        v-for="(message, index) in update?.queue"
-        :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')"
-        class="entry">
-        <div class="index">
-          {{ index + 1 }}.
+      <div class="error" v-if="visualisationLoadingError">
+        Error loading the visualisation?!
+        Try refreshing or something, I don't know, I'm just an error message.
+      </div>
+
+      <ShuttersPreview
+        :openShutters="update?.currentMessage?.current?.openShutters"
+        class="current-shutters" />
+      <CurrentMessagePreview :message="update?.currentMessage" />
+
+      <div
+        class="queue-separator"
+        :class="{'changing-message': changingMessage}">
+        <ChevronUp v-for="_ in 9" :key="_" />
+      </div>
+
+      <div v-if="update?.queue.length === 0" class="queue-call-to-action">
+        <div>
+          Try adding something to the queue!
         </div>
-        <ul class="message">
-          <li v-for="part in message.parts" :key="part.kind + part.character">
-            <MessagePartPreview :message_part="part"></MessagePartPreview>
-          </li>
-        </ul>
-      </li>
-    </ul>
+        <ArrowDown class="arrow"></ArrowDown>
+      </div>
+
+      <ul class="queue">
+        <li
+          v-for="(message, index) in update?.queue"
+          :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')"
+          class="entry">
+          <div class="index">
+            {{ index + 1 }}.
+          </div>
+          <ul class="message">
+            <li v-for="part in message.parts" :key="part.kind + part.character">
+              <MessagePartPreview :message_part="part"></MessagePartPreview>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
 
     <div class="message-form" v-if="messageFormLoading">
       <div class="loading-indicator">
@@ -45,7 +56,8 @@
     </div>
     <div class="message-form" v-if="messageFormLoadingError">
       <div class="error">
-        Error loading config?! Try refreshing or something, I don't know, I'm just an error message.
+        Error loading config?!
+        Try refreshing or something, I don't know, I'm just an error message.
       </div>
     </div>
     <div class="message-form" v-if="!messageFormLoading && !messageFormLoadingError">
@@ -81,8 +93,8 @@ enum NewMessageFormState {
 
 enum VisualisationState {
   Loading,
+  LoadingError,
   Ready,
-  Error,
 }
 
 export default defineComponent({
@@ -120,13 +132,17 @@ export default defineComponent({
 
     const socket = this.api.stateUpdatesWS();
 
-    socket.addEventListener('open', () => {
-      console.log('open');
-    });
-
     socket.addEventListener('message', (event) => {
       this.visualisationState = VisualisationState.Ready;
       this.update = JSON.parse(event.data);
+    });
+
+    socket.addEventListener('error', () => {
+      this.visualisationState = VisualisationState.LoadingError;
+    });
+
+    socket.addEventListener('close', () => {
+      this.visualisationState = VisualisationState.LoadingError;
     });
   },
   watch: {
@@ -180,6 +196,12 @@ export default defineComponent({
     messageFormSubmitting(): boolean {
       return this.newMessageFormState === NewMessageFormState.Submitting;
     },
+    visualisationLoading(): boolean {
+      return this.visualisationState === VisualisationState.Loading;
+    },
+    visualisationLoadingError(): boolean {
+      return this.visualisationState === VisualisationState.LoadingError;
+    },
     changingMessage(): boolean {
       return !this.update?.currentMessage && !!this.update?.queue && this.update?.queue.length > 0;
     },
@@ -220,6 +242,19 @@ h1 {
     &.changing-message {
         animation: changing-message-blink-animation .5s steps(1) infinite;
     }
+}
+
+.visualisation {
+  position: relative;
+
+  .loading-indicator {
+    background-color: $color-dark;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+  }
 }
 
 .message-form {
