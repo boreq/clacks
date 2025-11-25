@@ -20,14 +20,14 @@
     <ul class="queue">
       <li
         v-for="(message, index) in update?.queue"
-        :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')">
+        :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')"
+        class="entry">
+        <div class="index">
+          {{ index + 1 }}.
+        </div>
         <ul class="message">
-          <li class="index">
-            {{ index + 1 }}.
-          </li>
           <li v-for="part in message.parts" :key="part.kind + part.character">
-            <span v-if="part.kind === 'CHARACTER'">{{ part.character }}</span>
-            <span v-if="part.kind === 'END'">END</span>
+            <MessagePartPreview :message_part="part"></MessagePartPreview>
           </li>
         </ul>
       </li>
@@ -65,6 +65,7 @@ import { API, ConfigResponse, StateUpdate } from '@/api';
 import ShuttersPreview from '@/components/ShuttersPreview.vue';
 import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue';
 import LoadingIndicator from '@/components/LoadingIndicator.vue';
+import MessagePartPreview from '@/components/MessagePartPreview.vue';
 
 enum NewMessageFormState {
     LoadingConfig,
@@ -86,6 +87,7 @@ export default defineComponent({
     CurrentMessagePreview,
     ChevronUp,
     LoadingIndicator,
+    MessagePartPreview,
   },
   data() {
     return {
@@ -270,26 +272,37 @@ h1 {
     list-style-type: none;
     margin: 0;
     padding: 0;
+    display: flex;
+    align-items: center;
+    flex-flow: column nowrap;
+    font-size: 3em;
 
-    .message {
+    .entry {
+      display: flex;
+      flex-flow: row nowrap;
+      align-items: center;
+
+      .index {
+        width: auto;
+        color: $color-primary;
+      }
+
+      .message {
         list-style-type: none;
         margin: 0;
         padding: 0;
-
-        .index {
-            width: auto;
-            color: $color-primary;
-        }
+        display: flex;
+        flex-flow: row wrap;
+        align-items: center;
 
         li {
-            display: inline-block;
-            margin: 0;
-            padding: 0;
-            font-weight: bold;
-            font-size: 3em;
-            width: 1em;
+          margin: 0;
+          padding: 0;
+          font-weight: bold;
         }
+      }
     }
+
 }
 
 .message {

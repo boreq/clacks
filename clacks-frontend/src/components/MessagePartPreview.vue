@@ -1,15 +1,21 @@
 <template>
   <div class="message-part-preview">
-    <div v-if="message_part?.kind == 'CHARACTER'">
-      <div v-if="message_part?.character !== ' '">
+    <div v-if="message_part?.kind == 'CHARACTER' && message_part.character !== ' '">
         {{ message_part?.character }}
-      </div>
-      <div v-if="message_part?.character === ' '">
-        SPACE
-      </div>
     </div>
-    <div v-if="message_part?.kind == 'END'">
-      END
+    <div v-if="message_part?.kind == 'CHARACTER' && message_part.character === ' '">
+        <Space></Space>
+    </div>
+    <div v-if="message_part?.kind == 'END'" class="end">
+      <div>
+        E
+      </div>
+      <div>
+        N
+      </div>
+      <div>
+        D
+      </div>
     </div>
   </div>
 </template>
@@ -17,9 +23,13 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { MessagePart } from '@/types';
+import { Space } from 'lucide-vue-next';
 
 export default defineComponent({
   name: 'CurrentMessagePreview',
+  components: {
+    Space,
+  },
   props: {
     message_part: Object as PropType<MessagePart>,
   },
@@ -28,48 +38,33 @@ export default defineComponent({
 
 <style scoped lang="scss">
 .message-part-preview {
-    display: flex;
-    align-items: center;
-    height: 150px;
+  margin: .1em;
+  border: 1px solid $color-neutral;
+  width: 1.2em;
+  height: 1.2em;
 
-    ul {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-        li {
-            font-size: 3em;
-            font-weight: bold;
-            display: inline-block;
-            margin: 0;
-            padding: 0;
-            width: 1em;
-            text-align: center;
-        }
+  >div {
+    line-height: 1;
+
+    &.end {
+      display: flex;
+      flex-flow: column nowrap;
+      align-items: center;
+      font-size: .35em;
+      line-height: 1;
+
+      :nth-child(1) {
+        transform: translateX(-1em);
+      }
+
+      :nth-child(3) {
+        transform: translateX(1em);
+      }
     }
-
-    .arrow {
-        width: 100px;
-        text-align: center;
-    }
-
-    .before, .after {
-        flex: 1;
-    }
-
-    .before {
-        text-align: right;
-    }
-
-    .after {
-        text-align: left;
-    }
-
-    .current {
-        color: $color-primary;
-        font-size: 12em;
-        font-weight: bold;
-        width: 100px;
-    }
+  }
 }
 </style>

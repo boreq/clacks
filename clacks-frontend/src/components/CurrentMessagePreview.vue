@@ -50,7 +50,12 @@ export default defineComponent({
 .current-message-preview {
     display: flex;
     align-items: center;
-    height: 150px;
+
+    >* {
+      display: flex;
+      flex-flow: row wrap;
+      align-items: center;
+    }
 
     ul {
         list-style-type: none;
@@ -63,14 +68,17 @@ export default defineComponent({
             display: inline-block;
             margin: 0;
             padding: 0;
-            width: 1em;
             text-align: center;
         }
     }
 
     .arrow {
-        width: 100px;
-        text-align: center;
+        width: 50px;
+        justify-content: center;
+    }
+
+    .current {
+      justify-content: center;
     }
 
     .before, .after {
@@ -78,18 +86,19 @@ export default defineComponent({
     }
 
     .before {
-        text-align: right;
+      justify-content: end;
     }
 
     .after {
-        text-align: left;
+      justify-content: start;
     }
 
     .current {
         color: $color-primary;
         font-size: 12em;
         font-weight: bold;
-        width: 100px;
+        width: 300px;
+        height: 300px;
     }
 }
 </style>
