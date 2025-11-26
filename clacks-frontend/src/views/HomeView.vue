@@ -316,14 +316,10 @@ header {
     margin: 5em auto 0;
   }
 
-  .current-message {
-    margin: 0 auto 5em;
-  }
-
   .queue-separator {
     display: flex;
     flex-flow: row nowrap;
-    margin: 5em 0;
+    margin: 1em 0;
 
     >* {
       flex: 1;
