@@ -1,10 +1,14 @@
 <template>
   <div class="home">
-    <div>
+    <div class="call-to-action">
       Send your own message!
     </div>
 
     <img :src="qrCodeDataURL" v-if="qrCodeDataURL">
+
+    <div class="url">
+      https://<br/>onlyclacks.com
+    </div>
   </div>
 </template>
 
@@ -40,27 +44,29 @@ export default defineComponent({
 .home {
   background-color: $color-primary;
 
-  width: 102vw;
-  height: 102vh;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-flow: column nowrap;
   align-items: center;
   justify-content: center;
 
-  margin-top: -1vh;
-  margin-left: -1vw;
+  color: $color-dark;
+  text-transform: uppercase;
+  font-weight: bold;
 
-  div {
-    font-size: 5em;
-    color: $color-dark;
+  .call-to-action {
+    font-size: 3em;
     margin-bottom: 1em;
-    text-transform: uppercase;
-    font-weight: bold;
+  }
+
+  .url {
+    font-size: 2em;
   }
 
   img {
     display: block;
-    width: 30em;
+    width: 20em;
     margin: 0 auto;
   }
 }
