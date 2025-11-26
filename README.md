@@ -2,6 +2,8 @@
 
 ## Local development
 
+### Running
+
 You need Node v25, Yarn and the Rust toolchain installed on your machine.
 
 Run the following in the first terminal:
@@ -15,6 +17,18 @@ Run the following in the second terminal:
     $ yarn serve
 
 Next, open http://localhost:8080 in your browser.
+
+### Creating a pull request
+
+Make sure that the backend CI pipeline passes locally:
+
+    $ cd clacks-backend
+    $ make ci
+
+Make sure that the frontend linter doesn't return any errors:
+
+    $ cd clacks-frontend
+    $ yarn lint
 
 ## Building
 
