@@ -24,6 +24,13 @@
         </div>
       </div>
     </div>
+
+    <div class="shutters-wrapper">
+      <ShuttersPreview
+        :openShutters="message_part?.openShutters"
+        class="shutters">
+      </ShuttersPreview>
+    </div>
   </div>
 </template>
 
@@ -31,10 +38,12 @@
 import { defineComponent, PropType } from 'vue';
 import { MessagePart } from '@/types';
 import { Space } from 'lucide-vue-next';
+import ShuttersPreview from '@/components/ShuttersPreview.vue';
 
 export default defineComponent({
   name: 'CurrentMessagePreview',
   components: {
+    ShuttersPreview,
     Space,
   },
   props: {
@@ -49,10 +58,13 @@ export default defineComponent({
   border: 1px solid $color-neutral;
   width: 1.2em;
   height: 1.2em;
+  position: relative;
 
   display: flex;
   align-items: center;
   justify-content: center;
+
+  overflow: hidden;
 
   >div {
     line-height: 1;
@@ -70,6 +82,38 @@ export default defineComponent({
         align-items: center;
         justify-content: center;
       }
+    }
+  }
+
+  .shutters-wrapper {
+    display: none;
+
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    align-items: center;
+    justify-content: center;
+
+    background-color: $color-dark;
+
+    :deep(.shutters-preview) {
+      border-spacing: .1em;
+
+      td {
+        border-width: 1px;
+        width: .2em;
+        height: .2em;
+        padding: 0;
+      }
+    }
+  }
+
+  &:hover {
+    .shutters-wrapper {
+      display: flex;
     }
   }
 }
