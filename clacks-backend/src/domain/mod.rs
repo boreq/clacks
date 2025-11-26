@@ -85,6 +85,12 @@ impl ShutterPositions {
         })
     }
 
+    pub fn new_with_all_open() -> Self {
+        Self {
+            open_shutters: ShutterLocation::iter().cloned().collect(),
+        }
+    }
+
     pub fn new_with_all_closed() -> Self {
         Self {
             open_shutters: HashSet::default(),

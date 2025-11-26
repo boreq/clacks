@@ -4,7 +4,7 @@ use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
-use clacks_backend::domain::servos;
+use clacks_backend::domain::{ShutterPosition, ShutterPositions, servos};
 use clacks_backend::errors::Result;
 use clacks_backend::ports::http;
 use clacks_backend::ports::http::EventSubscriber;
@@ -25,6 +25,13 @@ fn cli() -> Command {
                 .about("Runs the program")
                 .arg(arg!(<CONFIG> "Path to the configuration file")),
         )
+        .subcommand(
+            Command::new("shutters")
+                .about("Moves shutters")
+                .subcommand_required(true)
+                .subcommand(Command::new("open").about("Opens shutters"))
+                .subcommand(Command::new("close").about("Opens shutters")),
+        )
 }
 
 #[tokio::main]
@@ -37,6 +44,15 @@ async fn main() -> Result<()> {
             let config_file_path = sub_matches.try_get_one::<String>("CONFIG")?.unwrap();
             run(config_file_path).await?;
         }
+        Some(("shutters", sub_matches)) => match sub_matches.subcommand() {
+            Some(("open", _sub_matches)) => {
+                move_shutters(&ShutterPosition::Open)?;
+            }
+            Some(("close", _sub_matches)) => {
+                move_shutters(&ShutterPosition::Closed)?;
+            }
+            _ => unreachable!(),
+        },
         _ => unreachable!(),
     }
 
@@ -104,6 +120,21 @@ async fn run(config_file_path: &str) -> Result<()> {
 
     server_loop(&server, &config, http_deps).await;
     Ok(())
+}
+
+fn move_shutters(position: &ShutterPosition) -> Result<()> {
+    #[cfg(not(feature = "raspberry_pi"))]
+    let servo_controller = adapters::MockServoController::new();
+
+    #[cfg(feature = "raspberry_pi")]
+    let servo_controller = adapters::raspberrypi::ServoController::new()?;
+
+    let shutters_controller = servos::ShuttersController::new(servo_controller);
+
+    shutters_controller.set_shutter_positions(&match position {
+        ShutterPosition::Open => ShutterPositions::new_with_all_open(),
+        ShutterPosition::Closed => ShutterPositions::new_with_all_closed(),
+    })
 }
 
 async fn server_loop<D>(server: &http::Server, config: &Config, deps: D)
