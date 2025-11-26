@@ -1,10 +1,11 @@
-pub mod shutters;
+#[cfg(feature = "raspberry_pi")]
+pub mod raspberrypi;
 
 use crate::app;
 use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};
 use crate::domain::time::Duration;
-use crate::domain::{Message, TimingConfig};
+use crate::domain::{Message, TimingConfig, servos};
 use crate::errors::Result;
 use anyhow::anyhow;
 use log::debug;
@@ -212,6 +213,27 @@ impl PubSub {
 
     pub fn subscribe_to_message_added_to_queue(&self) -> Receiver<()> {
         self.message_added_to_queue.subscribe()
+    }
+}
+
+pub struct MockServoController {}
+
+impl Default for MockServoController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MockServoController {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl servos::ServoController for MockServoController {
+    fn rotate(&self, id: &servos::ServoID, angle: &servos::ServoAngle) -> Result<()> {
+        debug!("moving servo {} to {}", id, angle);
+        Ok(())
     }
 }
 

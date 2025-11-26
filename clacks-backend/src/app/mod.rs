@@ -4,8 +4,9 @@ pub mod get_state;
 pub mod update_clacks;
 
 use crate::domain;
+use crate::domain::servos::ServoController;
 use crate::domain::time::Duration;
-use crate::domain::{CurrentMessage, EncodedMessage, Message, ShutterPositions};
+use crate::domain::{CurrentMessage, EncodedMessage, Message, ShutterPositions, servos};
 use crate::errors::Result;
 
 pub trait UpdateClacksHandler {
@@ -152,5 +153,14 @@ impl Encoding for domain::Encoding {
 
     fn supported_characters(&self) -> Vec<String> {
         self.supported_characters()
+    }
+}
+
+impl<T> ShuttersController for servos::ShuttersController<T>
+where
+    T: ServoController,
+{
+    fn set_shutter_positions(&self, shutter_positions: &ShutterPositions) -> Result<()> {
+        self.set_shutter_positions(shutter_positions)
     }
 }

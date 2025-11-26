@@ -1,3 +1,4 @@
+pub mod servos;
 pub mod time;
 
 use crate::app::ClacksUpdateResult;
@@ -6,10 +7,10 @@ use crate::errors::Error;
 use crate::errors::Result;
 use anyhow::anyhow;
 use rand::seq::IndexedRandom;
-use std::collections::hash_set::Iter;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::slice::Iter;
 use std::sync::{Arc, Mutex};
 
 pub const MAX_MESSAGE_LEN_BYTES: usize = 20;
@@ -20,6 +21,12 @@ pub enum ShutterPosition {
     Closed,
 }
 
+#[derive(Debug, Clone)]
+pub enum ShutterLocationSide {
+    Left,
+    Right,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ShutterLocation {
     TopLeft,
@@ -28,6 +35,31 @@ pub enum ShutterLocation {
     MiddleRight,
     BottomLeft,
     BottomRight,
+}
+
+impl ShutterLocation {
+    pub fn side(&self) -> ShutterLocationSide {
+        match &self {
+            ShutterLocation::TopLeft => ShutterLocationSide::Left,
+            ShutterLocation::TopRight => ShutterLocationSide::Right,
+            ShutterLocation::MiddleLeft => ShutterLocationSide::Left,
+            ShutterLocation::MiddleRight => ShutterLocationSide::Right,
+            ShutterLocation::BottomLeft => ShutterLocationSide::Left,
+            ShutterLocation::BottomRight => ShutterLocationSide::Right,
+        }
+    }
+
+    pub fn iter() -> Iter<'static, ShutterLocation> {
+        static SHUTTER_LOCATIONS: [ShutterLocation; 6] = [
+            ShutterLocation::TopLeft,
+            ShutterLocation::TopRight,
+            ShutterLocation::MiddleLeft,
+            ShutterLocation::MiddleRight,
+            ShutterLocation::BottomLeft,
+            ShutterLocation::BottomRight,
+        ];
+        SHUTTER_LOCATIONS.iter()
+    }
 }
 
 impl Display for ShutterLocation {
@@ -63,8 +95,16 @@ impl ShutterPositions {
         self.open_shutters.is_empty()
     }
 
-    pub fn open_shutters(&self) -> Iter<'_, ShutterLocation> {
+    pub fn open_shutters(&self) -> std::collections::hash_set::Iter<'_, ShutterLocation> {
         self.open_shutters.iter()
+    }
+
+    pub fn get_position(&self, location: &ShutterLocation) -> ShutterPosition {
+        if self.open_shutters.contains(location) {
+            ShutterPosition::Open
+        } else {
+            ShutterPosition::Closed
+        }
     }
 }
 

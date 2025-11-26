@@ -1,9 +1,10 @@
-use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub, shutters};
+use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
 use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
+use clacks_backend::domain::servos;
 use clacks_backend::errors::Result;
 use clacks_backend::ports::http;
 use clacks_backend::ports::http::EventSubscriber;
@@ -48,7 +49,14 @@ async fn run(config_file_path: &str) -> Result<()> {
 
     let metrics = Metrics::new()?;
     let pubsub = PubSub::new();
-    let shutters_controller = shutters::MockShuttersController::new();
+
+    #[cfg(not(feature = "raspberry_pi"))]
+    let servo_controller = adapters::MockServoController::new();
+
+    #[cfg(feature = "raspberry_pi")]
+    let servo_controller = adapters::raspberrypi::ServoController::new()?;
+
+    let shutters_controller = servos::ShuttersController::new(servo_controller);
 
     let queue = domain::Queue::new(config.queue_size())?;
     let encoding = domain::Encoding::default();

@@ -58,4 +58,10 @@ impl From<axum::http::Error> for Error {
     }
 }
 
+impl From<rppal::i2c::Error> for Error {
+    fn from(value: rppal::i2c::Error) -> Self {
+        Unknown(anyhow!(value))
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
