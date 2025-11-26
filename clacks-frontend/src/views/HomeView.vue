@@ -1,60 +1,66 @@
 <template>
   <div class="home">
-    <h1>
-      https://onlyclacks.com
-    </h1>
+    <header>
+      <h1>
+        https://onlyclacks.com
+      </h1>
 
-    <h2>
-      <a href="https://github.com/boreq/clacks">https://github.com/boreq/clacks</a>
-      -
-      <span>
-        Am I broken? <Phone class="icon"></Phone> 2677
-      </span>
-    </h2>
+      <h2>
+        <a href="https://github.com/boreq/clacks">https://github.com/boreq/clacks</a>
+        -
+        <span>
+          Am I broken? <Phone class="icon"></Phone> 2677
+        </span>
+      </h2>
+    </header>
 
     <div class="visualisation">
-      <div class="loading-indicator" v-if="visualisationLoading">
+      <div class="loading-indicator-wrapper" v-if="visualisationLoading">
         <LoadingIndicator></LoadingIndicator>
       </div>
 
-      <div class="error" v-if="visualisationError">
-        Error loading the visualisation?! Attempting to reestablish connection.
-        Try refreshing or something, I don't know, I'm just an error message.
-      </div>
-
-      <ShuttersPreview
-        :openShutters="update?.currentMessage?.current?.openShutters"
-        class="current-shutters" />
-      <CurrentMessagePreview :message="update?.currentMessage" />
-
-      <div
-        class="queue-separator"
-        :class="{'changing-message': changingMessage}">
-        <ChevronUp v-for="_ in 9" :key="_" />
-      </div>
-
-      <div v-if="update?.queue.length === 0" class="queue-call-to-action">
-        <div>
-          Try adding something to the queue!
+      <div class="error-wrapper" v-if="visualisationError">
+        <div class="text">
+          Error loading the visualisation?! Attempting to reestablish connection.
+          Try refreshing or something, I don't know, I'm just an error message.
         </div>
-        <ArrowDown class="arrow"></ArrowDown>
       </div>
 
-      <ul class="queue">
-        <li
-          v-for="(message, index) in update?.queue"
-          :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')"
-          class="entry">
-          <div class="index">
-            {{ index + 1 }}.
+      <div class="visualisation-content" v-if="visualisationReady">
+        <ShuttersPreview
+          :openShutters="update?.currentMessage?.current?.openShutters"
+          class="current-shutters" />
+        <CurrentMessagePreview :message="update?.currentMessage" />
+
+        <div
+          class="queue-separator"
+          :class="{'changing-message': changingMessage}">
+          <ChevronUp v-for="_ in 9" :key="_" />
+        </div>
+
+        <div v-if="update?.queue.length === 0" class="queue-call-to-action">
+          <div>
+            Try adding something to the queue!
           </div>
-          <ul class="message">
-            <li v-for="part in message.parts" :key="part.kind + part.character">
-              <MessagePartPreview :message_part="part"></MessagePartPreview>
-            </li>
-          </ul>
-        </li>
-      </ul>
+          <ArrowDown class="arrow"></ArrowDown>
+        </div>
+
+        <ul class="queue">
+          <li
+            v-for="(message, index) in update?.queue"
+            :key="message.parts.map(v => `${v.kind}${v.character}`).join('-')"
+            class="entry">
+            <div class="index">
+              {{ index + 1 }}.
+            </div>
+            <ul class="message">
+              <li v-for="part in message.parts" :key="part.kind + part.character">
+                <MessagePartPreview :message_part="part"></MessagePartPreview>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <div class="message-form" v-if="messageFormLoading">
@@ -135,7 +141,7 @@ export default defineComponent({
   },
   created(): void {
     this.tryLoad();
-    this.intervalID = window.setInterval(this.tryLoad, 1000);
+    this.intervalID = window.setInterval(this.tryLoad, 5000);
   },
   unmounted(): void {
     if (this.intervalID) {
@@ -173,6 +179,8 @@ export default defineComponent({
 
       if (this.visualisationState === null
           || this.visualisationState === VisualisationState.Error) {
+        this.visualisationState = VisualisationState.Loading;
+        console.log('opening socket');
         const socket = this.api.stateUpdatesWS();
 
         socket.addEventListener('message', (event) => {
@@ -181,10 +189,12 @@ export default defineComponent({
         });
 
         socket.addEventListener('error', () => {
+          console.log('error');
           this.visualisationState = VisualisationState.Error;
         });
 
         socket.addEventListener('close', () => {
+          console.log('close');
           this.visualisationState = VisualisationState.Error;
         });
       }
@@ -231,6 +241,9 @@ export default defineComponent({
     visualisationError(): boolean {
       return this.visualisationState === VisualisationState.Error;
     },
+    visualisationReady(): boolean {
+      return this.visualisationState === VisualisationState.Ready;
+    },
     changingMessage(): boolean {
       return !this.update?.currentMessage && !!this.update?.queue && this.update?.queue.length > 0;
     },
@@ -239,26 +252,28 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-h1, h2 {
-  text-transform: uppercase;
-}
-
-h1 {
-  color: $color-primary;
-  font-weight: bold;
-}
-
-h2 {
-  color: $color-neutral;
-  font-size: .8em;
-
-  a {
-    color: $color-primary;
+header {
+  h1, h2 {
+    text-transform: uppercase;
   }
 
-  .icon {
-    width: .8em;
-    height: .8em;
+  h1 {
+    color: $color-primary;
+    font-weight: bold;
+  }
+
+  h2 {
+    color: $color-neutral;
+    font-size: .8em;
+
+    a {
+      color: $color-primary;
+    }
+
+    .icon {
+      width: .8em;
+      height: .8em;
+    }
   }
 }
 
@@ -268,43 +283,57 @@ h2 {
     }
 }
 
-.current-shutters {
-    margin: 5em auto 0;
-}
-
-.current-message{
-    margin: 0 auto 5em;
-}
-
-.queue-separator {
-    display: flex;
-    flex-flow: row nowrap;
-    margin: 5em 0;
-
-    >* {
-        flex: 1;
-    }
-
-    &.changing-message {
-        animation: changing-message-blink-animation .5s steps(1) infinite;
-    }
-}
-
 .visualisation {
   position: relative;
 
-  >.loading-indicator, >.error {
+  .loading-indicator-wrapper, .error-wrapper {
     background-color: $color-dark;
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
+    height: 100vh;
+    width: 100wh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .error {
+  .loading-indicator-wrapper {
+    .loading-indicator {
+      height: 20vh;
+      width: 20wh;
+    }
+  }
+
+  .error-wrapper {
     font-size: 3em;
   }
+
+  .current-shutters {
+    margin: 5em auto 0;
+  }
+
+  .current-message {
+    margin: 0 auto 5em;
+  }
+
+  .queue-separator {
+    display: flex;
+    flex-flow: row nowrap;
+    margin: 5em 0;
+
+    >* {
+      flex: 1;
+    }
+
+    &.changing-message {
+      animation: changing-message-blink-animation .5s steps(1) infinite;
+    }
+  }
+
 }
 
 .message-form {
