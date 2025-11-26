@@ -5,12 +5,11 @@
     </h1>
 
     <h2>
-      <div>
+      <a href="https://github.com/boreq/clacks">https://github.com/boreq/clacks</a>
+      -
+      <span>
         Am I broken? <Phone class="icon"></Phone> 2677
-      </div>
-      <a href="https://github.com/boreq/clacks">
-        https://github.com/boreq/clacks
-      </a>
+      </span>
     </h2>
 
     <div class="visualisation">
@@ -251,10 +250,10 @@ h1 {
 
 h2 {
   color: $color-neutral;
+  font-size: .8em;
 
   a {
     color: $color-primary;
-    font-size: .5em;
   }
 
   .icon {
