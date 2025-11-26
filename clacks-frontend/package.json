@@ -11,11 +11,13 @@
     "axios": "^1.13.2",
     "core-js": "^3.8.3",
     "lucide-vue-next": "^0.554.0",
+    "qrcode": "^1.5.4",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",
     "@vue/cli-plugin-babel": "~5.0.0",
