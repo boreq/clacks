@@ -1,3 +1,5 @@
+pub mod shutters;
+
 use crate::app;
 use crate::app::ApplicationHandlerCallResult;
 use crate::config::{Config, Environment};

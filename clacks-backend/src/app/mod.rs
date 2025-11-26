@@ -5,7 +5,7 @@ pub mod update_clacks;
 
 use crate::domain;
 use crate::domain::time::Duration;
-use crate::domain::{CurrentMessage, EncodedMessage, Message};
+use crate::domain::{CurrentMessage, EncodedMessage, Message, ShutterPositions};
 use crate::errors::Result;
 
 pub trait UpdateClacksHandler {
@@ -75,6 +75,7 @@ impl Config {
 pub trait Clacks {
     fn update(&self) -> Result<ClacksUpdateResult>;
     fn current_message(&self) -> Option<CurrentMessage>;
+    fn get_desired_shutter_positions(&self) -> ShutterPositions;
 }
 
 pub enum ClacksUpdateResult {
@@ -107,6 +108,10 @@ pub trait EventPublisher {
     fn publish_message_added_to_queue(&self) -> Result<()>;
 }
 
+pub trait ShuttersController {
+    fn set_shutter_positions(&self, shutter_positions: &ShutterPositions) -> Result<()>;
+}
+
 pub enum ApplicationHandlerCallResult {
     Ok,
     Error,
@@ -119,6 +124,10 @@ impl Clacks for domain::Clacks {
 
     fn current_message(&self) -> Option<CurrentMessage> {
         self.current_message()
+    }
+
+    fn get_desired_shutter_positions(&self) -> ShutterPositions {
+        self.get_desired_shutter_positions()
     }
 }
 

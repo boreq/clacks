@@ -1,4 +1,4 @@
-use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub};
+use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub, shutters};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
 use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
@@ -48,6 +48,7 @@ async fn run(config_file_path: &str) -> Result<()> {
 
     let metrics = Metrics::new()?;
     let pubsub = PubSub::new();
+    let shutters_controller = shutters::MockShuttersController::new();
 
     let queue = domain::Queue::new(config.queue_size())?;
     let encoding = domain::Encoding::default();
@@ -61,8 +62,12 @@ async fn run(config_file_path: &str) -> Result<()> {
 
     let clacks = domain::Clacks::new(config.timing().clone(), queue.clone(), messages_to_inject);
 
-    let update_clacks_handler =
-        UpdateClacksHandler::new(clacks.clone(), metrics.clone(), pubsub.clone());
+    let update_clacks_handler = UpdateClacksHandler::new(
+        clacks.clone(),
+        metrics.clone(),
+        pubsub.clone(),
+        shutters_controller,
+    );
     let add_message_to_queue_handler = AddMessageToQueueHandler::new(
         queue.clone(),
         metrics.clone(),

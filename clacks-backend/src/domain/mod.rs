@@ -8,6 +8,7 @@ use anyhow::anyhow;
 use rand::seq::IndexedRandom;
 use std::collections::hash_set::Iter;
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
@@ -29,6 +30,12 @@ pub enum ShutterLocation {
     BottomRight,
 }
 
+impl Display for ShutterLocation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct ShutterPositions {
     open_shutters: HashSet<ShutterLocation>,
@@ -44,6 +51,12 @@ impl ShutterPositions {
         Ok(Self {
             open_shutters: open_shutters_set,
         })
+    }
+
+    pub fn new_with_all_closed() -> Self {
+        Self {
+            open_shutters: HashSet::default(),
+        }
     }
 
     pub fn all_closed(&self) -> bool {
@@ -65,6 +78,16 @@ impl Hash for ShutterPositions {
         for s in locations {
             s.hash(state);
         }
+    }
+}
+
+impl Display for ShutterPositions {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.open_shutters.is_empty() {
+            return write!(f, "<all closed>");
+        }
+        let open_shutters: Vec<String> = self.open_shutters.iter().map(|s| s.to_string()).collect();
+        write!(f, "<open: {}>", open_shutters.join(", "))
     }
 }
 
@@ -650,6 +673,17 @@ impl Clacks {
     pub fn current_message(&self) -> Option<CurrentMessage> {
         let current_state = self.current_state.lock().unwrap();
         current_state.current_message()
+    }
+
+    pub fn get_desired_shutter_positions(&self) -> ShutterPositions {
+        let current_state = self.current_state.lock().unwrap();
+        match current_state.current_message() {
+            None => ShutterPositions::new_with_all_closed(),
+            Some(current_message) => match current_message.current {
+                None => ShutterPositions::new_with_all_closed(),
+                Some(part) => part.shutter_positions,
+            },
+        }
     }
 }
 
