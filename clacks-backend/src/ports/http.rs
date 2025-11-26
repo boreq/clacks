@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use crate::app::{AddMessageToQueue, Config, GetConfigHandler, GetStateHandler};
 use crate::config::Environment;
 use crate::domain::{
@@ -7,6 +6,7 @@ use crate::domain::{
 };
 use crate::errors::{Error, Result};
 use crate::{adapters, app, config};
+use anyhow::anyhow;
 use app::AddMessageToQueueHandler;
 use axum::body::Body;
 use axum::extract::ws::WebSocket;
