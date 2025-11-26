@@ -158,7 +158,8 @@ async fn handle_post_queue<D>(
 where
     D: Deps,
 {
-    let message = Message::new(json_body.message).map_err(|_| AppError::BadRequest)?;
+    let message = Message::new(json_body.message)
+        .map_err(|_| AppError::BadRequest("invalid message".into()))?;
     let command = AddMessageToQueue::new(message);
     deps.add_message_to_queue_handler().handle(command)?;
     Ok(())
@@ -394,18 +395,20 @@ impl EventSubscriber for adapters::PubSub {
 }
 
 enum AppError {
-    BadRequest,
+    BadRequest(String),
     UnknownError,
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        match self {
-            AppError::BadRequest => (StatusCode::BAD_REQUEST, "Bad request").into_response(),
-            AppError::UnknownError => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
-            }
-        }
+        let (status, message) = match self {
+            AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message),
+            AppError::UnknownError => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".into(),
+            ),
+        };
+        (status, Json(TransportError { message })).into_response()
     }
 }
 
@@ -413,7 +416,16 @@ impl<E> From<E> for AppError
 where
     E: Into<Error>,
 {
-    fn from(_err: E) -> Self {
-        Self::UnknownError
+    fn from(err: E) -> Self {
+        match err.into() {
+            Error::QueueIsFull => Self::BadRequest("Queue is full".into()),
+            _ => Self::UnknownError,
+        }
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransportError {
+    message: String,
 }
