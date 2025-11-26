@@ -99,6 +99,11 @@ export default defineComponent({
         font-weight: bold;
         width: 300px;
         height: 300px;
+
+        &:deep() .icon {
+          width: 180px;
+          height: 180px;
+        }
     }
 
   &.changing-character {

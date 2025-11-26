@@ -4,7 +4,7 @@
         {{ message_part?.character }}
     </div>
     <div v-if="message_part?.kind == 'CHARACTER' && message_part.character === ' '">
-        <Space></Space>
+        <Space class="icon"></Space>
     </div>
     <div v-if="message_part?.kind == 'END'" class="end">
       <div class="line">
