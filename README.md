@@ -1,5 +1,18 @@
 # Clacks
 
+## Building
+
+To build a self-contained and ready-to-deploy binary for the Raspberry Pi you
+need `cargo` as well as Docker or Podman installed locally.
+
+### Building using Podman
+
+    $ CONTAINER_ENGINE=podman make
+
+### Building using Docker
+
+    $ CONTAINER_ENGINE=docker make 
+
 ## Hardware
 
 - Raspberry PI Zero

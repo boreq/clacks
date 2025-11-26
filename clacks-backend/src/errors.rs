@@ -52,4 +52,10 @@ impl From<MatchesError> for Error {
     }
 }
 
+impl From<axum::http::Error> for Error {
+    fn from(value: axum::http::Error) -> Self {
+        Unknown(anyhow!(value))
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;

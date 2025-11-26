@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use crate::app::{AddMessageToQueue, Config, GetConfigHandler, GetStateHandler};
 use crate::config::Environment;
 use crate::domain::{
@@ -24,6 +25,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
+use include_dir::File;
 use log::debug;
 use prometheus::TextEncoder;
 use serde::{Deserialize, Serialize};
@@ -36,6 +38,12 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+
+#[cfg(feature = "serve_frontend")]
+static FRONTEND_DIR: include_dir::Dir = include_dir::include_dir!("$FRONTEND_DIST_DIRECTORY");
+
+#[cfg(not(feature = "serve_frontend"))]
+static FRONTEND_DIR: include_dir::Dir = include_dir::Dir::new("fakedir", &[]);
 
 pub struct Server {}
 
@@ -90,8 +98,48 @@ impl Server {
     }
 }
 
-async fn serve_frontend(_request: Request<Body>) -> std::result::Result<Response<Body>, AppError> {
-    Err(AppError::UnknownError)
+async fn serve_frontend(request: Request<Body>) -> std::result::Result<Response<Body>, AppError> {
+    let path = request
+        .uri()
+        .path()
+        .strip_prefix("/")
+        .ok_or_else(|| anyhow!("it seems that the path didn't start with / which is odd"))?;
+    let f = get_path_or_index_html(path)?;
+    let mime = get_mime(f.path());
+
+    let mut resp = Response::builder().status(StatusCode::OK);
+    if let Some(mime) = mime {
+        resp = resp.header("Content-Type", mime);
+    }
+    let body = Body::from(f.contents());
+    let resp = resp.body(body)?;
+    Ok(resp)
+}
+
+fn get_path_or_index_html(path: &str) -> Result<&'static File<'static>> {
+    match FRONTEND_DIR.get_file(path) {
+        Some(file) => Ok(file),
+        None => match FRONTEND_DIR.get_file("index.html") {
+            Some(file) => Ok(file),
+            None => Err(anyhow!("no index.html found?!").into()),
+        },
+    }
+}
+
+fn get_mime(path: &std::path::Path) -> Option<&str> {
+    if path.extension().is_some_and(|v| v == "js") {
+        return Some("text/javascript");
+    }
+
+    if path.extension().is_some_and(|v| v == "css") {
+        return Some("text/css");
+    }
+
+    if path.extension().is_some_and(|v| v == "html") {
+        return Some("text/html");
+    }
+
+    None
 }
 
 async fn handle_get_metrics<D>(State(deps): State<D>) -> std::result::Result<String, AppError>

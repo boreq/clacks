@@ -1,0 +1,2 @@
+[build.env]
+volumes = ["FRONTEND_DIST_DIRECTORY=../clacks-frontend/dist"]

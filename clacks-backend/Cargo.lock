@@ -308,7 +308,6 @@ dependencies = [
  "futures-util",
  "http",
  "include_dir",
- "lazy_static",
  "log",
  "prometheus",
  "rand",
