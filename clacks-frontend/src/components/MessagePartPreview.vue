@@ -103,7 +103,7 @@ export default defineComponent({
       border-spacing: .1em;
 
       td {
-        border-width: 1px;
+        border-width: .04em;
         width: .2em;
         height: .2em;
         padding: 0;
