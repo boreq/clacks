@@ -3,6 +3,5 @@ _media
 _docs
 *.FCBak
 clacks.FCStd.*
-*.FCStd
 .idea/
 target
