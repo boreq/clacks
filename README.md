@@ -1,5 +1,21 @@
 # Clacks
 
+## Local development
+
+You need Node v25, Yarn and the Rust toolchain installed on your machine.
+
+Run the following in the first terminal:
+
+    $ cd clacks-backend
+    $ cargo run -- run local_config.toml
+
+Run the following in the second terminal:
+
+    $ cd clacks-frontend
+    $ yarn serve
+
+Next, open http://localhost:8080 in your browser.
+
 ## Building
 
 To build a self-contained and ready-to-deploy binary for the Raspberry Pi you
