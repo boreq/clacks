@@ -28,7 +28,7 @@ export default defineComponent({
     ShutterPreview,
   },
   props: {
-    openShutters: [] as PropType<ShutterLocation[]>,
+    openShutters: Array as PropType<ShutterLocation[]>,
   },
   methods: {
     getShutterPosition(location: ShutterLocation): ShutterPosition {
