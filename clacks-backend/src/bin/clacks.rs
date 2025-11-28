@@ -1,4 +1,3 @@
-use std::fmt::format;
 use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
 use clacks_backend::app::get_config::GetConfigHandler;

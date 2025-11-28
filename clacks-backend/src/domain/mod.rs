@@ -501,6 +501,48 @@ impl Default for Encoding {
             ShutterPositions::new(&[ShutterLocation::BottomLeft]).unwrap(),
         );
 
+        // custom
+        characters.insert(
+            "1".into(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft]).unwrap(),
+        );
+        characters.insert(
+            "2".into(),
+            ShutterPositions::new(&[ShutterLocation::TopRight]).unwrap(),
+        );
+        characters.insert(
+            "3".into(),
+            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::TopLeft]).unwrap(),
+        );
+        characters.insert(
+            "4".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleLeft]).unwrap(),
+        );
+        characters.insert(
+            "5".into(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleLeft]).unwrap(),
+        );
+        characters.insert(
+            "6".into(),
+            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleLeft]).unwrap(),
+        );
+        characters.insert(
+            "7".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleRight]).unwrap(),
+        );
+        characters.insert(
+            "8".into(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleRight]).unwrap(),
+        );
+        characters.insert(
+            "9".into(),
+            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleRight]).unwrap(),
+        );
+        characters.insert(
+            "0".into(),
+            ShutterPositions::new(&[ShutterLocation::MiddleRight, ShutterLocation::TopLeft, ShutterLocation::MiddleLeft]).unwrap(),
+        );
+
         Self::new(
             characters,
             ShutterPositions::new(&[
