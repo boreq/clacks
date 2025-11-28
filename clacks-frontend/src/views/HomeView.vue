@@ -75,17 +75,24 @@
       </div>
     </div>
     <div class="message-form" v-if="!messageFormLoading && !messageFormLoadingError">
-      <input type="text"
-        placeholder="YOU C-MAIL MESSAGE HERE..."
-        v-model="newMessageText"
-        @keydown.enter="submitMessageForm"
-      >
-      <button @click="submitMessageForm">
-        <ChevronUp />
-        <span class="text">SEND</span>
-        <ChevronUp />
-        <LoadingIndicator v-if="messageFormSubmitting"></LoadingIndicator>
-      </button>
+      <ul class="errors">
+          <li v-for="error in errors" :key="error">
+              {{ error }}
+          </li>
+      </ul>
+      <div class="fields">
+        <input type="text"
+               placeholder="YOU C-MAIL MESSAGE HERE..."
+               v-model="newMessageText"
+               @keydown.enter="submitMessageForm"
+        >
+        <button @click="submitMessageForm">
+          <ChevronUp />
+          <span class="text">SEND</span>
+          <ChevronUp />
+          <LoadingIndicator v-if="messageFormSubmitting"></LoadingIndicator>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -94,11 +101,13 @@
 import { defineComponent } from 'vue';
 import { ChevronUp, ArrowDown, Phone } from 'lucide-vue-next';
 import { API, ConfigResponse, StateUpdate } from '@/api';
+import { DisplayedError } from '@/types';
 
 import ShuttersPreview from '@/components/ShuttersPreview.vue';
 import CurrentMessagePreview from '@/components/CurrentMessagePreview.vue';
 import LoadingIndicator from '@/components/LoadingIndicator.vue';
 import MessagePartPreview from '@/components/MessagePartPreview.vue';
+import { ClacksStore } from '@/store';
 
 enum NewMessageFormState {
     LoadingConfig,
@@ -136,16 +145,21 @@ export default defineComponent({
       newMessageFormState: null as NewMessageFormState | null,
       newMessageText: '',
 
-      intervalID: null as number | null,
+      tryLoadIntervalID: null as number | null,
+      clearOldErrorsIntervalID: null as number | null,
     };
   },
   created(): void {
     this.tryLoad();
-    this.intervalID = window.setInterval(this.tryLoad, 5000);
+    this.tryLoadIntervalID = window.setInterval(this.tryLoad, 5000);
+    this.clearOldErrorsIntervalID = window.setInterval(this.clearOldErrors, 5000);
   },
   unmounted(): void {
-    if (this.intervalID) {
-      window.clearInterval(this.intervalID);
+    if (this.tryLoadIntervalID) {
+      window.clearInterval(this.tryLoadIntervalID);
+    }
+    if (this.clearOldErrorsIntervalID) {
+      window.clearInterval(this.clearOldErrorsIntervalID);
     }
   },
   watch: {
@@ -199,6 +213,11 @@ export default defineComponent({
         });
       }
     },
+    clearOldErrors(): void {
+      // eslint-disable-next-line
+      const store = (this as any).$store as ClacksStore;
+      store.commit('clearOldErrors');
+    },
     submitMessageForm(): void {
       if (this.newMessageFormState !== NewMessageFormState.Ready) {
         return;
@@ -214,13 +233,20 @@ export default defineComponent({
         message: this.newMessageText,
       }).then((response) => {
         if (response.status !== 200) {
-          alert('error');
+          // eslint-disable-next-line
+          const store = (this as any).$store as ClacksStore;
+          store.commit(
+            'addError',
+            `Error adding message to queue: ${response.data.message}.`,
+          );
           return;
         }
         this.newMessageText = '';
-        this.newMessageFormState = NewMessageFormState.Ready;
       }).catch(() => {
-        alert('something went wrong');
+        // eslint-disable-next-line
+        const store = (this as any).$store as ClacksStore;
+        store.commit('addError', 'Error adding message to queue.');
+      }).finally(() => {
         this.newMessageFormState = NewMessageFormState.Ready;
       });
     },
@@ -246,6 +272,10 @@ export default defineComponent({
     },
     changingMessage(): boolean {
       return !this.update?.currentMessage && !!this.update?.queue && this.update?.queue.length > 0;
+    },
+    errors(): string[] {
+      // eslint-disable-next-line
+      return (this as any).$store.state.errors.map((v: DisplayedError) => v.message);
     },
   },
 });
@@ -337,23 +367,29 @@ header {
     right: 0;
     left: 0;
     bottom: 0;
-    padding: 1em;
-    display: flex;
-    align-items: stretch;
     background-color: $color-dark;
 
-    .loading-indicator {
+    .errors {
+      list-style-type: none;
+    }
+
+    .fields {
+      padding: 1em;
+      display: flex;
+      align-items: stretch;
+
+      .loading-indicator {
         flex: 1;
         text-align: center;
         height: 100px;
-    }
+      }
 
-    .error {
+      .error {
         text-align: center;
         flex: 1;
-    }
+      }
 
-    input, button {
+      input, button {
         display: block;
         margin: 0;
         display: 0;
@@ -363,18 +399,18 @@ header {
         font-family: inherit;
         font-size: 2em;
         padding: .5em;
-    }
+      }
 
-    input {
+      input {
         flex: 1;
         text-align: center;
 
         &:focus {
           outline: none;
         }
-    }
+      }
 
-    button {
+      button {
         border-left: 0;
         user-select: none;
         position: relative;
@@ -395,15 +431,16 @@ header {
         }
 
         &:hover {
-            color: $color-dark;
-            background-color: $color-primary;
-            cursor: pointer;
+          color: $color-dark;
+          background-color: $color-primary;
+          cursor: pointer;
         }
 
         &:active {
           color: $color-primary;
           background-color: $color-dark;
         }
+      }
     }
 }
 

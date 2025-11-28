@@ -6,8 +6,8 @@ export class API {
     return axios.get<ConfigResponse>(`${process.env.VUE_APP_BACKEND_URL}/api/config`);
   }
 
-  addMessageToQueue(request: AddMessageToQueueRequest): Promise<AxiosResponse<void>> {
-    return axios.post<void>(`${process.env.VUE_APP_BACKEND_URL}/api/queue`, request);
+  addMessageToQueue(request: AddMessageToQueueRequest): Promise<AxiosResponse<ErrorResponse>> {
+    return axios.post<ErrorResponse>(`${process.env.VUE_APP_BACKEND_URL}/api/queue`, request);
   }
 
   stateUpdatesWS(): WebSocket {
@@ -27,4 +27,8 @@ export interface AddMessageToQueueRequest {
 export interface StateUpdate {
     currentMessage?: CurrentMessage;
     queue: Message[];
+}
+
+export interface ErrorResponse {
+    message: string;
 }

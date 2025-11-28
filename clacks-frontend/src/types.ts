@@ -32,3 +32,8 @@ export enum MessagePartKind {
     Character = 'CHARACTER',
     End = 'END',
 }
+
+export interface DisplayedError {
+    message: string;
+    createdAt: Date;
+}
