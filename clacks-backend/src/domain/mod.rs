@@ -520,11 +520,13 @@ impl Default for Encoding {
         );
         characters.insert(
             "5".into(),
-            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleLeft]).unwrap(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleLeft])
+                .unwrap(),
         );
         characters.insert(
             "6".into(),
-            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleLeft]).unwrap(),
+            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleLeft])
+                .unwrap(),
         );
         characters.insert(
             "7".into(),
@@ -532,15 +534,22 @@ impl Default for Encoding {
         );
         characters.insert(
             "8".into(),
-            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleRight]).unwrap(),
+            ShutterPositions::new(&[ShutterLocation::TopLeft, ShutterLocation::MiddleRight])
+                .unwrap(),
         );
         characters.insert(
             "9".into(),
-            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleRight]).unwrap(),
+            ShutterPositions::new(&[ShutterLocation::TopRight, ShutterLocation::MiddleRight])
+                .unwrap(),
         );
         characters.insert(
             "0".into(),
-            ShutterPositions::new(&[ShutterLocation::MiddleRight, ShutterLocation::TopLeft, ShutterLocation::MiddleLeft]).unwrap(),
+            ShutterPositions::new(&[
+                ShutterLocation::MiddleRight,
+                ShutterLocation::TopLeft,
+                ShutterLocation::MiddleLeft,
+            ])
+            .unwrap(),
         );
 
         Self::new(
@@ -633,7 +642,7 @@ impl Encoding {
     }
 
     pub fn check_usage(&self, positions: &ShutterPositions) -> Option<MessageComponent> {
-        for (character, character_positions)  in &self.characters {
+        for (character, character_positions) in &self.characters {
             if character_positions == positions {
                 return Some(MessageComponent::Character(character.clone()));
             }

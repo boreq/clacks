@@ -4,7 +4,9 @@ use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
-use clacks_backend::domain::{ShutterPosition, ShutterPositions, servos, ShutterLocation, Encoding, MessageComponent};
+use clacks_backend::domain::{
+    Encoding, MessageComponent, ShutterLocation, ShutterPosition, ShutterPositions, servos,
+};
 use clacks_backend::errors::Result;
 use clacks_backend::ports::http;
 use clacks_backend::ports::http::EventSubscriber;
@@ -36,7 +38,7 @@ fn cli() -> Command {
             Command::new("encoding")
                 .about("Interacts with the encoding")
                 .subcommand_required(true)
-                .subcommand(Command::new("show").about("Displays used and unused combinations"))
+                .subcommand(Command::new("show").about("Displays used and unused combinations")),
         )
 }
 
@@ -155,45 +157,38 @@ fn show_encoding() -> Result<()> {
     for i in 0..64 {
         let mut open_shutters = vec![];
 
-        if i & 1 != 0{
+        if i & 1 != 0 {
             open_shutters.push(ShutterLocation::TopLeft)
         }
 
-        if i & 1<<1 != 0{
+        if i & 1 << 1 != 0 {
             open_shutters.push(ShutterLocation::TopRight)
         }
 
-        if i & 1<<2 != 0{
+        if i & 1 << 2 != 0 {
             open_shutters.push(ShutterLocation::MiddleLeft)
         }
 
-        if i & 1<<3 != 0{
+        if i & 1 << 3 != 0 {
             open_shutters.push(ShutterLocation::MiddleRight)
         }
 
-        if i & 1<<4 != 0{
+        if i & 1 << 4 != 0 {
             open_shutters.push(ShutterLocation::BottomLeft)
         }
 
-        if i & 1<<5 != 0{
+        if i & 1 << 5 != 0 {
             open_shutters.push(ShutterLocation::BottomRight)
         }
-
 
         let shutter_positions = ShutterPositions::new(&open_shutters)?;
 
         let status = match encoding.check_usage(&shutter_positions) {
-            None => {
-                ""
+            None => "",
+            Some(v) => match v {
+                MessageComponent::Character(character) => &format!("'{}'", character),
+                MessageComponent::End => "<END>",
             },
-            Some(v) => match v{
-                MessageComponent::Character(character) => {
-                    &format!("'{}'", character)
-                }
-                MessageComponent::End => {
-                    "<END>"
-                }
-            }
         };
 
         println!("{}\t{}\t{}", i, status, shutter_positions)
