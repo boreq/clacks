@@ -589,6 +589,20 @@ impl Encoding {
     pub fn supported_characters(&self) -> Vec<String> {
         self.characters.keys().cloned().collect()
     }
+
+    pub fn check_usage(&self, positions: &ShutterPositions) -> Option<MessageComponent> {
+        for (character, character_positions)  in &self.characters {
+            if character_positions == positions {
+                return Some(MessageComponent::Character(character.clone()));
+            }
+        }
+
+        if positions == &self.message_end {
+            return Some(MessageComponent::End);
+        }
+
+        None
+    }
 }
 
 #[derive(Clone)]

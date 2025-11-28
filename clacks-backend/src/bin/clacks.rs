@@ -1,10 +1,11 @@
+use std::fmt::format;
 use clacks_backend::adapters::{ConfigLoader, Metrics, PubSub};
 use clacks_backend::app::add_message_to_queue::AddMessageToQueueHandler;
 use clacks_backend::app::get_config::GetConfigHandler;
 use clacks_backend::app::get_state::GetStateHandler;
 use clacks_backend::app::update_clacks::UpdateClacksHandler;
 use clacks_backend::config::Config;
-use clacks_backend::domain::{ShutterPosition, ShutterPositions, servos};
+use clacks_backend::domain::{ShutterPosition, ShutterPositions, servos, ShutterLocation, Encoding, MessageComponent};
 use clacks_backend::errors::Result;
 use clacks_backend::ports::http;
 use clacks_backend::ports::http::EventSubscriber;
@@ -32,6 +33,12 @@ fn cli() -> Command {
                 .subcommand(Command::new("open").about("Opens shutters"))
                 .subcommand(Command::new("close").about("Opens shutters")),
         )
+        .subcommand(
+            Command::new("encoding")
+                .about("Interacts with the encoding")
+                .subcommand_required(true)
+                .subcommand(Command::new("show").about("Displays used and unused combinations"))
+        )
 }
 
 #[tokio::main]
@@ -50,6 +57,12 @@ async fn main() -> Result<()> {
             }
             Some(("close", _sub_matches)) => {
                 move_shutters(&ShutterPosition::Closed)?;
+            }
+            _ => unreachable!(),
+        },
+        Some(("encoding", sub_matches)) => match sub_matches.subcommand() {
+            Some(("show", _sub_matches)) => {
+                show_encoding()?;
             }
             _ => unreachable!(),
         },
@@ -135,6 +148,59 @@ fn move_shutters(position: &ShutterPosition) -> Result<()> {
         ShutterPosition::Open => ShutterPositions::new_with_all_open(),
         ShutterPosition::Closed => ShutterPositions::new_with_all_closed(),
     })
+}
+
+fn show_encoding() -> Result<()> {
+    let encoding = Encoding::default();
+
+    for i in 0..64 {
+        let mut open_shutters = vec![];
+
+        if i & 1 != 0{
+            open_shutters.push(ShutterLocation::TopLeft)
+        }
+
+        if i & 1<<1 != 0{
+            open_shutters.push(ShutterLocation::TopRight)
+        }
+
+        if i & 1<<2 != 0{
+            open_shutters.push(ShutterLocation::MiddleLeft)
+        }
+
+        if i & 1<<3 != 0{
+            open_shutters.push(ShutterLocation::MiddleRight)
+        }
+
+        if i & 1<<4 != 0{
+            open_shutters.push(ShutterLocation::BottomLeft)
+        }
+
+        if i & 1<<5 != 0{
+            open_shutters.push(ShutterLocation::BottomRight)
+        }
+
+
+        let shutter_positions = ShutterPositions::new(&open_shutters)?;
+
+        let status = match encoding.check_usage(&shutter_positions) {
+            None => {
+                ""
+            },
+            Some(v) => match v{
+                MessageComponent::Character(character) => {
+                    &format!("'{}'", character)
+                }
+                MessageComponent::End => {
+                    "<END>"
+                }
+            }
+        };
+
+        println!("{}\t{}\t{}", i, status, shutter_positions)
+    }
+
+    Ok(())
 }
 
 async fn server_loop<D>(server: &http::Server, config: &Config, deps: D)
