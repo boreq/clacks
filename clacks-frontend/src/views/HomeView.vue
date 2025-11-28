@@ -231,24 +231,24 @@ export default defineComponent({
 
       this.api.addMessageToQueue({
         message: this.newMessageText,
-      }).then((response) => {
-        if (response.status !== 200) {
-          // eslint-disable-next-line
-          const store = (this as any).$store as ClacksStore;
-          store.commit(
-            'addError',
-            `Error adding message to queue: ${response.data.message}.`,
-          );
-          return;
-        }
+      }).then(() => {
         this.newMessageText = '';
-      }).catch(() => {
+      }).catch((something) => {
         // eslint-disable-next-line
         const store = (this as any).$store as ClacksStore;
-        store.commit('addError', 'Error adding message to queue.');
+        store.commit(
+          'addError',
+          this.createErrorMessage('Error adding message to the queue', something?.response?.data?.message),
+        );
       }).finally(() => {
         this.newMessageFormState = NewMessageFormState.Ready;
       });
+    },
+    createErrorMessage(mainReason: string, secondaryReason?: string): string {
+      if (mainReason && secondaryReason) {
+        return `${mainReason}: ${secondaryReason}.`;
+      }
+      return `${mainReason}.`;
     },
   },
   computed: {
