@@ -2,11 +2,11 @@
   <div class="home">
     <header>
       <h1>
-        https://onlyclacks.com
+        onlyclacks.com
       </h1>
 
       <h2>
-        <a href="https://github.com/boreq/clacks">https://github.com/boreq/clacks</a>
+        <a href="https://github.com/boreq/clacks">github.com/boreq/clacks</a>
         -
         <span>
           Am I broken? <Phone class="icon"></Phone> 2677
