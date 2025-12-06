@@ -22,9 +22,17 @@ CROSS_RPI_RUSTFLAGS=-C target-cpu=arm1176jz-s
 CROSS_RPI_TARGET=arm-unknown-linux-gnueabihf
 CROSS_RPI_FEATURES=raspberry_pi serve_frontend
 CROSS_RPI_COMMAND_BUILD=RUSTFLAGS="$(CROSS_RPI_RUSTFLAGS)" CROSS_CONTAINER_ENGINE=$(CROSS_CONTAINER_ENGINE) cross build --target="$(CROSS_RPI_TARGET)" --features="$(CROSS_RPI_FEATURES)" --release
+BINARY_LOCATION=$(BACKEND_DIRECTORY)/target/$(CROSS_RPI_TARGET)/release/clacks
+
+.PHONY: all
+all: build push
 
 .PHONY: build
 build: build-frontend build-backend
+
+.PHONY: push
+push:
+	rsync -z --progress "${BINARY_LOCATION}" clacks:~/clacks
 
 .PHONY: build-frontend
 build-frontend:
@@ -36,4 +44,4 @@ build-backend:
 	cargo install cross --git https://github.com/cross-rs/cross
 	cd $(BACKEND_DIRECTORY) && $(CROSS_RPI_COMMAND_BUILD) --bin=$(MAIN_BINARY_NAME)
 	@echo 'Binary location:'
-	@echo '$(BACKEND_DIRECTORY)/target/$(CROSS_RPI_TARGET)/release/clacks'
+	@echo '$(BINARY_LOCATION)'

@@ -33,15 +33,16 @@ Make sure that the frontend linter doesn't return any errors:
 ## Building
 
 To build a self-contained and ready-to-deploy binary for the Raspberry Pi you
-need `cargo` as well as Docker or Podman installed locally.
+need `cargo` as well as Docker or Podman installed locally. By default `podman`
+is used but you can use either.
 
 ### Building using Podman
 
-    $ CONTAINER_ENGINE=podman make
+    $ CONTAINER_ENGINE=podman make build
 
 ### Building using Docker
 
-    $ CONTAINER_ENGINE=docker make 
+    $ CONTAINER_ENGINE=docker make build
 
 ## Hardware
 
