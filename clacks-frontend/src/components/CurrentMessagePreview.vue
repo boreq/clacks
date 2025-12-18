@@ -97,8 +97,8 @@ export default defineComponent({
         color: $color-primary;
         font-size: 12em;
         font-weight: bold;
-        width: 300px;
-        height: 300px;
+        width: 2em;
+        height: 2em;
 
         &:deep() .icon {
           width: 180px;

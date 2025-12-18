@@ -513,4 +513,28 @@ header {
     color: $color-dark;
   }
 }
+
+@media (max-width: $responsive-width) {
+  .visualisation {
+    font-size: .5em;
+
+    .current-shutters {
+      margin-top: 1em;
+    }
+  }
+
+  .message-form {
+    .fields {
+      font-size: .5em;
+
+      button .lucide-chevron-up {
+        display: none;
+      }
+    }
+  }
+
+  .queue-call-to-action {
+    font-size: 1em;
+  }
+}
 </style>

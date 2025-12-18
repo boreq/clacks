@@ -67,8 +67,8 @@ table {
 
     td {
         border: 5px solid $color-neutral;
-        width: 10vh;
-        height: 10vh;
+        width: 8em;
+        height: 8em;
     }
 }
 </style>
