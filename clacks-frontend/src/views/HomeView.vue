@@ -534,7 +534,7 @@ header {
   }
 
   .queue-call-to-action {
-    font-size: 1em;
+    font-size: 2em;
   }
 }
 </style>
