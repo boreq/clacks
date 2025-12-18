@@ -363,7 +363,7 @@ header {
 }
 
 .message-form {
-    position: absolute;
+    position: fixed;
     right: 0;
     left: 0;
     bottom: 0;
