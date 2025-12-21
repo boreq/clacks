@@ -1,13 +1,13 @@
 <template>
   <div class="home">
     <div class="call-to-action">
-      Send your own message!
+      Send your own message using Clacks!
     </div>
 
     <img :src="qrCodeDataURL" v-if="qrCodeDataURL">
 
     <div class="url">
-      https://<br/>onlyclacks.com
+      https://onlyclacks.com
     </div>
   </div>
 </template>
