@@ -17,7 +17,7 @@ import { defineComponent } from 'vue';
 import QRCode from 'qrcode';
 
 export default defineComponent({
-  name: 'PosterView',
+  name: 'PosterViewWhite',
   data() {
     return {
       qrCodeDataURL: null as null | string,
@@ -29,9 +29,6 @@ export default defineComponent({
       {
         errorCorrectionLevel: 'H',
         width: 500,
-        color: {
-          light: '#ffff00',
-        },
       },
     ).then((dataURL) => {
       this.qrCodeDataURL = dataURL;
@@ -40,9 +37,15 @@ export default defineComponent({
 });
 </script>
 
+<style lang="scss">
+html {
+  background-color: $color-neutral;
+}
+</style>
+
 <style lang="scss" scoped>
 .home {
-  background-color: $color-primary;
+  background-color: $color-neutral;
 
   width: 100vw;
   height: 100vh;

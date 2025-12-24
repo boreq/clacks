@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import PosterView from '../views/PosterView.vue';
+import PosterViewWhite from '../views/PosterViewWhite.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -12,6 +13,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/poster',
     name: 'poster',
     component: PosterView,
+  },
+  {
+    path: '/poster-white',
+    name: 'poster-white',
+    component: PosterViewWhite,
   },
 ];
 
