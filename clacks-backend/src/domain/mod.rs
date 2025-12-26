@@ -12,6 +12,7 @@ use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::slice::Iter;
 use std::sync::{Arc, Mutex};
+use std::collections::VecDeque;
 
 pub const MAX_MESSAGE_LEN_BYTES: usize = 20;
 
@@ -658,7 +659,7 @@ impl Encoding {
 
 #[derive(Clone)]
 pub struct Queue {
-    messages: Arc<Mutex<Vec<EncodedMessage>>>,
+    messages: Arc<Mutex<VecDeque<EncodedMessage>>>,
     max_messages: usize,
 }
 
@@ -668,7 +669,7 @@ impl Queue {
             return Err(anyhow!("max_messages in the queue can't be set to zero").into());
         }
         Ok(Self {
-            messages: Arc::new(Mutex::new(vec![])),
+            messages: Arc::new(Mutex::new(VecDeque::from(vec![]))),
             max_messages,
         })
     }
@@ -678,18 +679,18 @@ impl Queue {
         if messages.len() >= self.max_messages {
             return Err(Error::QueueIsFull);
         }
-        messages.push(message);
+        messages.push_back(message);
         Ok(())
     }
 
     pub fn pop_message(&self) -> Option<EncodedMessage> {
         let mut messages = self.messages.lock().unwrap();
-        messages.pop()
+        messages.pop_front()
     }
 
     pub fn get_messages(&self) -> Result<Vec<EncodedMessage>> {
         let messages = self.messages.lock().unwrap();
-        Ok(messages.clone())
+        Ok(Vec::from(messages.clone()))
     }
 }
 
