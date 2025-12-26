@@ -37,12 +37,6 @@ export default defineComponent({
 });
 </script>
 
-<style lang="scss">
-html {
-  background-color: $color-neutral;
-}
-</style>
-
 <style lang="scss" scoped>
 .home {
   background-color: $color-neutral;
