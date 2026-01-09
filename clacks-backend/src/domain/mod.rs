@@ -7,12 +7,12 @@ use crate::errors::Error;
 use crate::errors::Result;
 use anyhow::anyhow;
 use rand::seq::IndexedRandom;
+use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::slice::Iter;
 use std::sync::{Arc, Mutex};
-use std::collections::VecDeque;
 
 pub const MAX_MESSAGE_LEN_BYTES: usize = 20;
 
